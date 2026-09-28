@@ -44,5 +44,9 @@ Desarrollar una plataforma web accesible, segura e inclusiva que facilite la bú
 - DT4: OTERO GUZMAN JOHAN JARED
 
 # Fecha 
-+ Fecha de incio: 21 de septiembre
++ Fecha de inicio: 21 de septiembre
+  - Sprint 1 Inicio: 21/09/2026 Finalización: 02/10/2026
+  - Sprint 2 Inicio: 05/10/2026 Finalización: 16/10/2026
+  - Sprint 3 Inicio: 19/10/2026 Finalización: 30/10/2026
+  - Sprint 4 Inicio: 02/11/2026 Finalización: 13/10/2026
 + fecha de finalización: 20 de noviembre  
