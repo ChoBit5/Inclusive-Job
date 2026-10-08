@@ -38,10 +38,10 @@ Desarrollar una plataforma web accesible, segura e inclusiva que facilite la bú
 # Equipo de desarrollo 
 
 - SM: CARVENTE MIGUEL ISAI
-- DT1: ANGEL GALLAGERT TREJO GARRIDO
-- DT2: GUZMAN SANCHEZ LUIS ENRIQUE
-- DT3: PEREZ ARELLANO ARIANA
-- DT4: OTERO GUZMAN JOHAN JARED
+- DT1: GUZMAN SANCHEZ LUIS ENRIQUE
+- DT2: PEREZ ARELLANO ARIANA
+- DT3: OTERO GUZMAN JOHAN JARED
+- DT4: TREJO GARRIDO ANGEL GALLAGERT
 
 # Fecha 
 + Fecha de inicio: 21 de septiembre
