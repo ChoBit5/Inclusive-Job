@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAnalisisCvIA, usePostulanteChat, usePostulanteChatHistorial, useRecomendacionVacantesIA, usePostulacionesEntrevistaIA } from "../data/interface.js";
+import { useAnalisisCvIA, usePostulanteChat, usePostulanteChatHistorial, useRecomendacionVacantesIA, usePostulacionesEntrevistaIA } from "../hooks/Postulante/useDomain.js";
 import EntrevistaModal from "./modal_entrevista";
 import EntrevistaRealModal from "./modal_entrevista_real";
 const COLORS = {

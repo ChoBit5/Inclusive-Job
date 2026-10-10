@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useEntrevistaRealPostulante } from "../data/interface.js";
+import { useEntrevistaRealPostulante } from "../hooks/Postulante/useDomain.js";
 const COLORS = {
   primary: "#2563eb",
   primaryDark: "#1e40af",

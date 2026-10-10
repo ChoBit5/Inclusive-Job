@@ -4,7 +4,7 @@ import { Search, BookmarkCheck, Award, Accessibility, Clock, CheckCircle, ArrowR
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
-import { usePostulanteDashboard } from '../../data/interface.js';
+import { usePostulanteDashboard } from '../../hooks/Postulante/useDomain.js';
 function useCountUp(end, duration = 1200) {
   const [v, setV] = useState(0);
   const raf = useRef(null);

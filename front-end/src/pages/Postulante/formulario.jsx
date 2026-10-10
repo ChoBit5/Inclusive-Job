@@ -1,7 +1,7 @@
 import React from "react";
 import { postulantTheme } from '../../components/Portal/portalTheme';
-import { useSesion } from "../../data/interface.js";
-import { useFormularioPostulante } from "../../data/interface.js";
+import { useSesion } from "../../hooks/Sesion/useSesion.js";
+import { useFormularioPostulante } from "../../hooks/Postulante/useDomain.js";
 export default function Formulario() {
   const {
     obtenerEstadoFormulario,

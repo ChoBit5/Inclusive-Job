@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import fondo from "../assets/img/Designer (21).png";
 import img2 from "../assets/img/Designer1.png";
 import fondo4 from "../assets/img/fondoQ.png";
-import { useComentariosPublicos } from "../data/interface.js";
+import { useComentariosPublicos } from "../hooks/Publico/useDomain.js";
 function formatFecha(iso) {
   if (!iso) return "";
   const d = new Date(iso);

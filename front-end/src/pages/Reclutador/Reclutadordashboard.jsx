@@ -7,8 +7,8 @@ import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorNav } from '../../components/Portal/Navitems';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
-import { resolveAssetUrl } from '../../data/interface.js';
-import { useDiscapacidadesReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useReclutadorDashboard } from '../../data/interface.js';
+import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
+import { useDiscapacidadesReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useReclutadorDashboard } from '../../hooks/Reclutador/useDomain.js';
 import { INITIAL_VACANTE_FORM, VacanteFormModal, validateVacanteForm } from './components/VacanteFormModal';
 const ESTADO_COLOR = {
   activa: {

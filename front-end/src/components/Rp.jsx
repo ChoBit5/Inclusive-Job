@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRecuperarPassword } from "../data/interface.js";
+import { useRecuperarPassword } from "../hooks/Sesion/useSesion.js";
 export default function Rp() {
   const {
     recuperar

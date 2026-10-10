@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X, LogOut } from 'lucide-react';
-import { resolveAssetUrl } from '../../data/interface.js';
+import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 export default function PortalSidebar({
   theme,
   navItems = [],

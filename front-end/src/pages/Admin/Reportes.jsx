@@ -4,8 +4,8 @@ import { Eye, Flag, PauseCircle, RefreshCw, X } from 'lucide-react';
 import { PageHeader, Badge, Button, SearchBar, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
-import { useSearch, usePagination } from '../../data/interface.js';
-import { useReporteAcciones, useReportes } from '../../data/interface.js';
+import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
+import { useReporteAcciones, useReportes } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmTextareaAction, successAlert, errorAlert } from '../../components/Admin/alerts';
 const LIMITE = 15;
 const ESTADO_BADGE = {

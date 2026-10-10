@@ -6,10 +6,10 @@ import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 import { reclutadorNav } from "../../components/Portal/Navitems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
 import { errorAlert, successAlert } from "../../components/Admin/alerts";
-import { resolveAssetUrl } from "../../data/interface.js";
+import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 import PdfPreviewModal from "../../components/PdfPreviewModal";
-import { useCandidatosVacanteReclutador, useVacantesConCandidatosReclutador, useSolicitarEntrevistaReclutador } from "../../data/interface.js";
-import { ENDPOINTS } from "../../data/interface.js";
+import { useCandidatosVacanteReclutador, useVacantesConCandidatosReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
+import { ENDPOINTS } from "../../hooks/Reclutador/apiReclutador.js";
 export default function Candidatos() {
   const location = useLocation();
   const navigate = useNavigate();

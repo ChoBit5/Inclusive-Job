@@ -4,7 +4,7 @@ import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
-import { useAnalisisCvIA, useDocumentosPostulante, usePostulanteChatHistorial } from '../../data/interface.js';
+import { useAnalisisCvIA, useDocumentosPostulante, usePostulanteChatHistorial } from '../../hooks/Postulante/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',

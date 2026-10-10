@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Rp from "../components/Rp";
-import { rutaPorRol } from "../data/interface.js";
-import { useSesion } from "../data/interface.js";
-import { useGoogleDomain } from "../data/interface.js";
+import { rutaPorRol } from "../hooks/Sesion/apiSesion.js";
+import { useSesion } from "../hooks/Sesion/useSesion.js";
+import { useGoogleDomain } from "../hooks/Google/useDomain.js";
 import { errorAlert, successAlert } from "../components/Admin/alerts";
-import { GoogleLogin } from "../components/GoogleLoginMock";
+import { GoogleLogin } from "@react-oauth/google";
 const LOGIN_ALERT_THEME = {
   bgSurface: "#f8fbff",
   textPrimary: "#0f172a",
@@ -27,6 +27,11 @@ const Registro = () => {
   const {
     loginConGoogle
   } = useGoogleDomain();
+  const googleBtnRef = useRef(null);
+  const dispararGooglePopup = () => {
+    const btn = googleBtnRef.current?.querySelector("div[role=button], button");
+    if (btn) btn.click();
+  };
   const [form, setForm] = useState({
     correo: "",
     password: ""
@@ -167,7 +172,7 @@ const Registro = () => {
                 </div>
 
                 
-                <div style={{
+                <div ref={googleBtnRef} style={{
                 display: "none"
               }}>
                   <GoogleLogin ux_mode="popup" auto_select={false} cancel_on_tap_outside={true} onSuccess={async credentialResponse => {
@@ -192,11 +197,7 @@ const Registro = () => {
                 }} />
                 </div>
 
-                <button type="button" onClick={() => loginConGoogle({
-                credential: 'demo-local'
-              }).then(data => {
-                window.location.href = rutaPorRol(data.user);
-              })} style={styles.googleBtn}>
+                <button type="button" onClick={dispararGooglePopup} style={styles.googleBtn}>
                   <img src="/logo.webp" alt="Google" style={{
                   width: 24,
                   height: 24

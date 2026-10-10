@@ -8,7 +8,7 @@ import { Button, ErrorBanner, PageHeader, SearchBar } from '../../components/Adm
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
 import BubleChat from "../Reclutador/ChatBot.jsx";
-import { useAvisosReportesReclutador, useReportesReclutador } from '../../data/interface.js';
+import { useAvisosReportesReclutador, useReportesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
 const LIMITE = 15;
 export default function ReportesMios() {

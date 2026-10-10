@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
-import { useReclutadorChat, useReclutadorChatHistorial, useMejorCandidatoReclutador, useVacantesReclutador, useSolicitarEntrevistaReclutador } from "../../data/interface.js";
+import { useReclutadorChat, useReclutadorChatHistorial, useMejorCandidatoReclutador, useVacantesReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 const RUTA_CANDIDATOS = "/reclutador/candidatos";
 const PATRON_MEJOR_CANDIDATO = /mejor\s+candidat|mejor\s+postulante|candidat[oa]\s+ideal|recomi[eé]ndame.*candidat|qui[eé]n.*(mejor|ideal).*postul/i;

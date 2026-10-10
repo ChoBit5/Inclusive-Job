@@ -4,8 +4,8 @@ import { Search, Accessibility, MapPin, Briefcase, ChevronRight, ArrowRight, Che
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
-import { useRecomendacionVacantesIA, useVacantesPostulante } from '../../data/interface.js';
-import { BACKEND_URL } from '../../data/interface.js';
+import { useRecomendacionVacantesIA, useVacantesPostulante } from '../../hooks/Postulante/useDomain.js';
+import { resolveAssetUrl as backendAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 function formatFecha(iso) {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
@@ -18,11 +18,6 @@ function formatSalario(min, max) {
   if (!max) return `Desde ${fmt(min)} MXN`;
   if (!min) return `Hasta ${fmt(max)} MXN`;
   return `${fmt(min)} – ${fmt(max)} MXN`;
-}
-function backendAssetUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  return `${BACKEND_URL}/${String(path).replace(/^\/+/, '')}`;
 }
 function getInitials(name) {
   const clean = String(name || '').trim();

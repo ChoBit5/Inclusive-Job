@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Building2, FileText, Mail, Phone, RefreshCw, Save, User } from 'lucide-react';
 import { Badge, Button, ErrorBanner, Select } from '../../components/Admin/UI';
-import { usePostulacionAcciones, usePostulacionDetalle } from '../../data/interface.js';
-import { ENDPOINTS } from '../../data/interface.js';
+import { usePostulacionAcciones, usePostulacionDetalle } from '../../hooks/Admin/useDomain.js';
+import { ENDPOINTS } from '../../hooks/Admin/apiAdmin.js';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 const ESTADO_BADGE = {

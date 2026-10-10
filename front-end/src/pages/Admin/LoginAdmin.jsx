@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Accessibility, ShieldCheck, Loader2 } from 'lucide-react';
-import { useSesion } from '../../data/interface.js';
+import { useSesion } from '../../hooks/Sesion/useSesion.js';
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({

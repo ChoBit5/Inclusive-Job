@@ -4,7 +4,7 @@ import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
 import { reclutadorNav } from '../../components/Portal/Navitems';
 import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/alerts';
-import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../data/interface.js';
+import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import BubleChat from '../Reclutador/ChatBot.jsx';
 import { DiscapacidadBadges, INITIAL_VACANTE_FORM, VacanteFormModal, getVacanteDiscapacidadIds, toDateInputValue, validateVacanteForm } from './components/VacanteFormModal';
 export default function VacantesReclutador() {

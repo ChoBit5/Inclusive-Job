@@ -146,4 +146,11 @@ vite.config.ts.timestamp-*
 
 
 AGENTS.md
+MIGRATION.md
+tests/
+docs/
 
+# Scripts locales de verificacion contra XAMPP (no versionar)
+front-end/scripts/
+front-end/tests/interface-data.test.mjs
+front-end/tests/no-network.test.mjs

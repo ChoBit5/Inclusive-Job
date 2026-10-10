@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Briefcase, Building2, CalendarDays, CheckCircle, FileText, Globe, Mail, MapPin, PauseCircle, Phone, PlayCircle, RefreshCw, User, XCircle } from 'lucide-react';
 import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Modal, { ModalFooter } from '../../components/Admin/Modal';
-import { useEmpresaAcciones, useEmpresaDetalle } from '../../data/interface.js';
+import { useEmpresaAcciones, useEmpresaDetalle } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmApprove, confirmSuspend, errorAlert, successAlert } from '../../components/Admin/alerts';
 const ESTADO_MAP = {
   0: {

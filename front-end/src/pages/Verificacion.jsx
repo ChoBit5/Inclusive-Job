@@ -1,8 +1,10 @@
 import { useRef, useState, useEffect } from "react";
-import { useVerificacionPostulante } from "../data/interface.js";
+import { useVerificacionPostulante } from "../hooks/Postulante/useDomain.js";
+
+// El backend envia el codigo por correo (SMTP) al registrar o reenviar.
+// Esta vista nunca recibe ni envia el codigo directamente.
 export default function Verificacion({
   correoUsuario,
-  codigoInicial,
   autoAbrir = false,
   onClose,
   onVerificado
@@ -20,15 +22,16 @@ export default function Verificacion({
   });
   const [reenvio, setReenvio] = useState(false);
   const inputsRef = useRef([]);
-  const yaEnviadoRef = useRef(false);
   const correo = correoUsuario;
   useEffect(() => {
-    if (autoAbrir && correo && codigoInicial && !yaEnviadoRef.current) {
-      yaEnviadoRef.current = true;
+    if (autoAbrir && correo) {
       setOpenModal(true);
-      enviarPorCorreo(codigoInicial);
+      setMensaje({
+        texto: "Te enviamos un código por correo. Vence en 15 minutos.",
+        tipo: "ok"
+      });
     }
-  }, [autoAbrir, correo, codigoInicial]);
+  }, [autoAbrir, correo]);
   const cerrarModal = () => {
     setOpenModal(false);
     if (onClose) onClose();
@@ -44,34 +47,9 @@ export default function Verificacion({
     setOpenModal(true);
     setDigitos(["", "", "", "", "", ""]);
     setMensaje({
-      texto: "",
-      tipo: ""
+      texto: "Te enviamos un código por correo. Vence en 15 minutos.",
+      tipo: "ok"
     });
-    if (codigoInicial) await enviarPorCorreo(codigoInicial);
-  };
-  const enviarPorCorreo = async codigo => {
-    if (reenvio || !correo || !codigo) return;
-    setCargando(true);
-    setMensaje({
-      texto: "",
-      tipo: ""
-    });
-    try {
-      await Promise.resolve(codigo);
-      setMensaje({
-        texto: "Código preparado para la demostración local.",
-        tipo: "ok"
-      });
-      setReenvio(true);
-      setTimeout(() => setReenvio(false), 60_000);
-    } catch {
-      setMensaje({
-        texto: "Error de red. Verifica tu conexión.",
-        tipo: "error"
-      });
-    } finally {
-      setCargando(false);
-    }
   };
   const reenviarCodigo = async () => {
     if (reenvio || !correo) return;
@@ -82,14 +60,27 @@ export default function Verificacion({
     });
     try {
       const data = await solicitarNuevoCodigo(correo);
-      if (!data.success) {
+      const texto = data.mensaje || data.message || "Revisa tu correo.";
+      if (!data.success && !data.httpOk) {
         setMensaje({
-          texto: data.mensaje || "No se pudo reenviar el código.",
+          texto,
           tipo: "error"
         });
         return;
       }
-      await enviarPorCorreo(data.codigo);
+      if (data.success === false) {
+        setMensaje({
+          texto,
+          tipo: "error"
+        });
+        return;
+      }
+      setMensaje({
+        texto,
+        tipo: "ok"
+      });
+      setReenvio(true);
+      setTimeout(() => setReenvio(false), 60_000);
     } catch {
       setMensaje({
         texto: "Error de red. Verifica tu conexión.",

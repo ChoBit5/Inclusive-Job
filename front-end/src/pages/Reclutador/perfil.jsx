@@ -4,8 +4,8 @@ import PortalLayout from "../../components/Portal/Portallayout";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 import { reclutadorNav } from "../../components/Portal/Navitems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
-import { useActualizarPerfilReclutador, usePerfilReclutador } from "../../data/interface.js";
-import { resolveAssetUrl } from "../../data/interface.js";
+import { useActualizarPerfilReclutador, usePerfilReclutador } from "../../hooks/Reclutador/useDomain.js";
+import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 const INITIAL_FORM = {
   nombres: "",
   apellidos: "",

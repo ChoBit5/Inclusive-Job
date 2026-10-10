@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, DollarSign, Monitor, Building2, User, Accessibility, XCircle, PauseCircle, RefreshCw } from 'lucide-react';
 import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
-import { useVacanteAcciones, useVacanteDetalle } from '../../data/interface.js';
+import { useVacanteAcciones, useVacanteDetalle } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
 const VACANTE_BADGE = {
   activa: 'success',

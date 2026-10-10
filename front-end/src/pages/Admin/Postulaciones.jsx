@@ -4,8 +4,8 @@ import { Eye, FileText, RefreshCw } from 'lucide-react';
 import { PageHeader, Badge, Button, SearchBar, FilterTabs, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
-import { useSearch, usePagination } from '../../data/interface.js';
-import { usePostulaciones } from '../../data/interface.js';
+import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
+import { usePostulaciones } from '../../hooks/Admin/useDomain.js';
 const ESTADO_BADGE = {
   pendiente: 'warning',
   entrevista: 'info',

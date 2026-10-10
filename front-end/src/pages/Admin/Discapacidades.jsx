@@ -3,7 +3,7 @@ import { Plus, Pencil, RefreshCw, Trash2, Accessibility } from 'lucide-react';
 import { PageHeader, Button, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Modal, { ModalFooter } from '../../components/Admin/Modal';
-import { useDiscapacidadAcciones, useDiscapacidades } from '../../data/interface.js';
+import { useDiscapacidadAcciones, useDiscapacidades } from '../../hooks/Admin/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const EMPTY_FORM = {
   nombre: '',

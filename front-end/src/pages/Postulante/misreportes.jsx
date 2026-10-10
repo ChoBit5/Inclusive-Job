@@ -3,7 +3,7 @@ import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility, Bookmark, Che
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
-import { useReportesPostulante } from '../../data/interface.js';
+import { useReportesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { confirmAction, confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',

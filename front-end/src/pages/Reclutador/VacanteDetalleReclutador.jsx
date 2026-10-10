@@ -7,7 +7,7 @@ import { reclutadorNav } from '../../components/Portal/Navitems';
 import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/alerts';
-import { useDetalleVacanteReclutador, useGuardarVacanteReclutador } from '../../data/interface.js';
+import { useDetalleVacanteReclutador, useGuardarVacanteReclutador } from '../../hooks/Reclutador/useDomain.js';
 const VACANTE_BADGE = {
   activa: 'success',
   pausada: 'warning',

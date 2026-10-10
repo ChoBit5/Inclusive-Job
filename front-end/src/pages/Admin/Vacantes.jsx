@@ -4,8 +4,8 @@ import { Briefcase, Eye, PauseCircle, RefreshCw, XCircle } from 'lucide-react';
 import { PageHeader, Badge, Button, SearchBar, FilterTabs, Select, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
-import { useSearch, usePagination } from '../../data/interface.js';
-import { useVacanteAcciones, useVacantes } from '../../data/interface.js';
+import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
+import { useVacanteAcciones, useVacantes } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
 const ESTADO_BADGE = {
   activa: 'success',

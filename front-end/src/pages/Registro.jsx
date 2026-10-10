@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import Verificacion from "./Verificacion";
 import { errorAlert, successAlert } from "../components/Admin/alerts";
-import { useGoogleDomain } from "../data/interface.js";
-import { GoogleLogin } from "../components/GoogleLoginMock";
+import { useGoogleDomain } from "../hooks/Google/useDomain.js";
+import { GoogleLogin } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
-import { useRegistroSesion } from "../data/interface.js";
+import { useRegistroSesion } from "../hooks/Sesion/useSesion.js";
 const StrengthBar = ({
   password
 }) => {
@@ -378,9 +378,9 @@ const Registro = () => {
   });
   const [mostrarVerificacion, setMostrarVerificacion] = useState(false);
   const [correoRegistrado, setCorreoRegistrado] = useState("");
-  const [codigoRegistro, setCodigoRegistro] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [googleUserId, setGoogleUserId] = useState(null);
+  const [googleCredential, setGoogleCredential] = useState(null);
   const isPostulante = mode === "postulante";
   const theme = isPostulante ? postulante : reclutador;
   const alertTheme = buildRegistroAlertTheme(isPostulante);
@@ -418,9 +418,9 @@ const Registro = () => {
       telefono,
       lada
     } = form;
-    const nombreRegex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ ]{3,60}$/;
+    const nombreRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü.\s-]{3,60}$/u;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,64}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,128}$/;
     const ladaRegex = /^\+\d{1,4}$/;
     const telefonoRegex = /^[0-9]{10}$/;
     if (!nombreRegex.test(nombres)) return "Nombre invalido";
@@ -432,6 +432,10 @@ const Registro = () => {
   };
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!isPostulante) {
+      await errorAlert("No disponible", "El registro de reclutador aún no está disponible en esta versión (feature 3 pendiente). Usa la pestaña Postulante.", alertTheme);
+      return;
+    }
     const error = validarRegistro();
     if (error) {
       await errorAlert("Datos inválidos", error, alertTheme);
@@ -444,17 +448,14 @@ const Registro = () => {
       };
       delete payload.lada;
       const data = await registrar(isPostulante ? 'postulante' : 'reclutador', payload);
-      console.log("Respuesta API:", data);
       if (data.success) {
         setCorreoRegistrado(form.correo);
-        setCodigoRegistro(data.codigo);
         await successAlert("Código enviado", "Revisa tu correo para completar el registro.", alertTheme);
         setMostrarVerificacion(true);
       } else {
         await errorAlert("No se pudo registrar", data.message || "Error en registro", alertTheme);
       }
     } catch (err) {
-      console.error(err);
       const message = err instanceof Error ? err.message : "No se pudo completar el registro.";
       await errorAlert("No se pudo registrar", message, alertTheme);
     }
@@ -569,6 +570,7 @@ const Registro = () => {
               });
               if (data.requiere_password) {
                 setGoogleUserId(data.id_usuario || data.id);
+                setGoogleCredential(credentialResponse.credential);
                 setShowPasswordModal(true);
               } else {
                 await errorAlert("Error", data.message, alertTheme);
@@ -644,10 +646,12 @@ const Registro = () => {
       {showPasswordModal && googleUserId && <PasswordModal isPostulante={isPostulante} userId={googleUserId} onClose={() => {
       setShowPasswordModal(false);
       setGoogleUserId(null);
+      setGoogleCredential(null);
     }} onConfirm={async (password, userId) => {
       const res = await completarPassword({
         id_usuario: userId,
-        password
+        password,
+        credential: googleCredential
       });
       if (!res.success) {
         return {
@@ -662,7 +666,7 @@ const Registro = () => {
     }} />}
 
       
-      {mostrarVerificacion && <Verificacion correoUsuario={correoRegistrado} codigoInicial={codigoRegistro} autoAbrir={true} onClose={() => setMostrarVerificacion(false)} />}
+      {mostrarVerificacion && <Verificacion correoUsuario={correoRegistrado} autoAbrir={true} onClose={() => setMostrarVerificacion(false)} />}
     </div>;
 };
 function buildRegistroAlertTheme(isPostulante) {

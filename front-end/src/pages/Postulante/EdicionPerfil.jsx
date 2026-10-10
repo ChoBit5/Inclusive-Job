@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import PortalLayout from "../../components/Portal/Portallayout";
 import { postulantTheme } from "../../components/Portal/portalTheme";
 import { postulantNav } from "../../components/Portal/Navitems";
-import { usePerfilPostulante } from "../../data/interface.js";
+import { usePerfilPostulante } from "../../hooks/Postulante/useDomain.js";
 const t = postulantTheme;
 const TABS = ["info", "skills", "accesibilidad"];
 const TAB_LABELS = {

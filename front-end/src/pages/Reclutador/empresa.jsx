@@ -4,7 +4,7 @@ import PortalLayout from "../../components/Portal/Portallayout";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 import { reclutadorNav } from "../../components/Portal/Navitems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
-import { useActualizarEmpresaReclutador, useEmpresaReclutador } from "../../data/interface.js";
+import { useActualizarEmpresaReclutador, useEmpresaReclutador } from "../../hooks/Reclutador/useDomain.js";
 const INITIAL_COMPANY = {
   nombre_empresa: "",
   rfc: "",

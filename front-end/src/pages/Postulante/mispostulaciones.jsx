@@ -3,7 +3,7 @@ import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility } from 'lucide
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
-import { usePostulacionesPostulante } from '../../data/interface.js';
+import { usePostulacionesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',

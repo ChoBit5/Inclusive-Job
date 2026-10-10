@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, Users, Briefcase, FileText, Accessibility, Flag, ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react';
-import { resolveAssetUrl } from '../../data/interface.js';
+import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 const NAV_ITEMS = [{
   to: '/admin',
   label: 'Dashboard',

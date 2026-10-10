@@ -5,8 +5,8 @@ import { Badge, Button, ErrorBanner, FilterTabs, PageHeader, SearchBar } from '.
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
 import Modal, { ModalFooter } from '../../components/Admin/Modal';
-import { usePagination, useSearch } from '../../data/interface.js';
-import { useEmpresaAcciones, useEmpresas } from '../../data/interface.js';
+import { usePagination, useSearch } from '../../hooks/Admin/useApi.js';
+import { useEmpresaAcciones, useEmpresas } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmApprove, confirmSuspend, errorAlert, successAlert } from '../../components/Admin/alerts';
 const ESTADO_MAP = {
   0: {

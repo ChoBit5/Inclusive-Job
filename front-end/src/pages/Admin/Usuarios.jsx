@@ -4,8 +4,8 @@ import { Eye, PauseCircle, PlayCircle, RefreshCw, Users } from 'lucide-react';
 import { PageHeader, Badge, Button, SearchBar, FilterTabs, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
-import { useSearch, usePagination } from '../../data/interface.js';
-import { useUsuarioAcciones, useUsuarios } from '../../data/interface.js';
+import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
+import { useUsuarioAcciones, useUsuarios } from '../../hooks/Admin/useDomain.js';
 import { confirmSuspend, confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
 const ROL_BADGE = {
   administrador: 'purple',

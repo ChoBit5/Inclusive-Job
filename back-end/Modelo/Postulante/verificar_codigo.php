@@ -1,0 +1,175 @@
+<?php
+
+require_once __DIR__ . '/../../config/cors.php';
+inclusijob_cors_headers('POST, OPTIONS', 'Content-Type');
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'mensaje' => 'Metodo no permitido.']);
+    exit;
+}
+
+require_once __DIR__ . '/../../Conexion.php';
+require_once __DIR__ . '/../usuarios_telefono.php';
+
+$body   = json_decode((string)file_get_contents('php://input'), true);
+$correo = trim((string)(is_array($body) ? ($body['correo'] ?? '') : ''));
+$codigo = trim((string)(is_array($body) ? ($body['codigo'] ?? '') : ''));
+
+if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'mensaje' => 'Correo electronico invalido.']);
+    exit;
+}
+
+if ($codigo === '' || !preg_match('/^\d{6}$/', $codigo)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'mensaje' => 'El codigo debe tener exactamente 6 digitos.']);
+    exit;
+}
+
+$con = conectarbd();
+mysqli_set_charset($con, 'utf8mb4');
+
+$stmtCheck = mysqli_prepare($con, "SELECT id_usuario, correo_validado FROM usuarios WHERE correo = ?");
+mysqli_stmt_bind_param($stmtCheck, 's', $correo);
+mysqli_stmt_execute($stmtCheck);
+$resCheck = mysqli_stmt_get_result($stmtCheck);
+
+if ($usuarioExistente = mysqli_fetch_assoc($resCheck)) {
+    mysqli_stmt_close($stmtCheck);
+
+    if ((int)$usuarioExistente['correo_validado'] === 1) {
+        mysqli_close($con);
+        echo json_encode([
+            'success' => true,
+            'mensaje' => 'Tu correo ya estaba verificado. Ya puedes iniciar sesion.',
+            'ya_verificado' => true
+        ]);
+        exit;
+    }
+} else {
+    mysqli_stmt_close($stmtCheck);
+}
+
+$ahora = date('Y-m-d H:i:s');
+$tipo  = 'registro_pendiente';
+
+$stmtT = mysqli_prepare($con,
+    "SELECT id_token, token FROM tokens
+      WHERE tipo = ?
+        AND tiempo_expira > ?
+        AND JSON_UNQUOTE(JSON_EXTRACT(token, '$.correo')) = ?
+        AND JSON_UNQUOTE(JSON_EXTRACT(token, '$.codigo')) = ?
+      LIMIT 1"
+);
+mysqli_stmt_bind_param($stmtT, 'ssss', $tipo, $ahora, $correo, $codigo);
+mysqli_stmt_execute($stmtT);
+$resT = mysqli_stmt_get_result($stmtT);
+
+if (mysqli_num_rows($resT) === 0) {
+    mysqli_stmt_close($stmtT);
+    mysqli_close($con);
+    http_response_code(422);
+    echo json_encode([
+        'success' => false,
+        'mensaje' => 'Codigo incorrecto o expirado. Solicita uno nuevo.'
+    ]);
+    exit;
+}
+
+$tokenRow = mysqli_fetch_assoc($resT);
+mysqli_stmt_close($stmtT);
+
+$id_token = (int)$tokenRow['id_token'];
+$payload  = json_decode((string)$tokenRow['token'], true);
+
+if (!$payload || empty($payload['nombres']) || empty($payload['password'])) {
+    mysqli_close($con);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'mensaje' => 'El registro pendiente esta corrupto. Vuelve a registrarte.']);
+    exit;
+}
+
+$nombres       = $payload['nombres'];
+$apellidos     = $payload['apellidos'] ?? '';
+$telefono      = $payload['telefono'] ?? '';
+$password_hash = $payload['password'];
+$id_rol        = (int)($payload['id_rol'] ?? 2);
+
+if (!in_array($id_rol, [2, 3], true)) {
+    mysqli_close($con);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'mensaje' => 'Rol de registro invalido.']);
+    exit;
+}
+
+$tablaPerfil = $id_rol === 3 ? 'reclutadores' : 'postulantes';
+
+if (usuario_telefono_duplicado($con, $telefono)) {
+    mysqli_close($con);
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'mensaje' => 'Este numero de telefono ya esta registrado.'
+    ]);
+    exit;
+}
+
+mysqli_begin_transaction($con);
+
+try {
+    $stmtIns = mysqli_prepare($con,
+        "INSERT INTO usuarios (nombres, apellidos, correo, contraseña, telefono, correo_validado, id_rol)
+         VALUES (?, ?, ?, ?, ?, 1, ?)"
+    );
+
+    if (!$stmtIns) {
+        throw new Exception('No se pudo preparar el registro de usuario: ' . mysqli_error($con));
+    }
+
+    mysqli_stmt_bind_param($stmtIns, 'sssssi', $nombres, $apellidos, $correo, $password_hash, $telefono, $id_rol);
+
+    if (!mysqli_stmt_execute($stmtIns)) {
+        throw new Exception('No se pudo crear el usuario');
+    }
+
+    $id_usuario = mysqli_insert_id($con);
+    mysqli_stmt_close($stmtIns);
+
+    if ($tablaPerfil === 'reclutadores') {
+        $stmtPerfil = mysqli_prepare($con, "INSERT INTO reclutadores (id_usuario, id_empresas) VALUES (?, NULL)");
+    } else {
+        $stmtPerfil = mysqli_prepare($con, "INSERT INTO {$tablaPerfil} (id_usuario) VALUES (?)");
+    }
+    mysqli_stmt_bind_param($stmtPerfil, 'i', $id_usuario);
+
+    if (!mysqli_stmt_execute($stmtPerfil)) {
+        throw new Exception('No se pudo crear el perfil');
+    }
+
+    mysqli_stmt_close($stmtPerfil);
+
+    $stmtDel = mysqli_prepare($con, "DELETE FROM tokens WHERE id_token = ?");
+    mysqli_stmt_bind_param($stmtDel, 'i', $id_token);
+    mysqli_stmt_execute($stmtDel);
+    mysqli_stmt_close($stmtDel);
+
+    mysqli_commit($con);
+} catch (Throwable $e) {
+    error_log('[VERIFICAR_CODIGO] ' . $e->getMessage());
+    mysqli_rollback($con);
+    mysqli_close($con);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'mensaje' => 'No se pudo crear la cuenta. Intenta de nuevo.']);
+    exit;
+}
+
+mysqli_close($con);
+
+echo json_encode([
+    'success'    => true,
+    'mensaje'    => 'Correo verificado y cuenta creada exitosamente. Ya puedes iniciar sesion.',
+    'id_usuario' => $id_usuario,
+    'id_rol'     => $id_rol
+]);

@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Swal from 'sweetalert2';
 import { StatCard, Badge, Button, PageHeader } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
-import { useDashboardStats, useEmpresaAcciones } from '../../data/interface.js';
+import { useDashboardStats, useEmpresaAcciones } from '../../hooks/Admin/useDomain.js';
 function useCountUp(end, duration = 1400) {
   const [count, setCount] = useState(0);
   const frameRef = useRef(null);

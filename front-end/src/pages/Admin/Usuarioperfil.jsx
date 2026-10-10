@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Phone, FileText, Globe, Award, Accessibility, Building2, Briefcase, PauseCircle, PlayCircle, RefreshCw, User } from 'lucide-react';
 import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
-import { useUsuarioAcciones, useUsuarioDetalle } from '../../data/interface.js';
-import { ENDPOINTS } from '../../data/interface.js';
-import { resolveAssetUrl } from '../../data/interface.js';
+import { useUsuarioAcciones, useUsuarioDetalle } from '../../hooks/Admin/useDomain.js';
+import { ENDPOINTS } from '../../hooks/Admin/apiAdmin.js';
+import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 import { confirmSuspend, confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 const ESTADO_BADGE = {
