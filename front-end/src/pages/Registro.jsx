@@ -432,10 +432,6 @@ const Registro = () => {
   };
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!isPostulante) {
-      await errorAlert("No disponible", "El registro de reclutador aún no está disponible en esta versión (feature 3 pendiente). Usa la pestaña Postulante.", alertTheme);
-      return;
-    }
     const error = validarRegistro();
     if (error) {
       await errorAlert("Datos inválidos", error, alertTheme);
