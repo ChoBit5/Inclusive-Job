@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import PortalSidebar from './Portalsidebar';
 import PortalHeader from './Portalheader';
+import { useSesion } from '../../hooks/Sesion/useSesion.js';
 const EMPTY_USER = {};
 export default function PortalLayout({
   theme,
@@ -14,7 +15,8 @@ export default function PortalLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const t = theme;
-  const currentUser = user;
+  const { user: sessionUser } = useSesion();
+  const currentUser = sessionUser ?? user;
   return <div style={{
     minHeight: '100svh',
     width: '100%',

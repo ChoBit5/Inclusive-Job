@@ -1,10 +1,10 @@
 
-import { Outlet, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, Outlet, Routes, Route, useLocation } from 'react-router-dom';
 
 // ── Páginas públicas ─────────────────────────────────────────
 import Home        from './pages/Home.jsx';
 import LoginAdmin  from './pages/Admin/LoginAdmin.jsx';
-import Vista from './pages/Reclutador/vista.jsx';
 import Login from './pages/Ingresar.jsx';
 import Registro from './pages/Registro.jsx';
 import Verificacion from './pages/Verificacion.jsx';
@@ -43,6 +43,110 @@ import Mispostulaciones from "./pages/Postulante/mispostulaciones.jsx";
 import Misreportes from "./pages/Postulante/misreportes.jsx";
 import EdicionPerfil from "./pages/Postulante/EdicionPerfil.jsx"
 import ChatBubble from './components/ChatBot.jsx';
+import { useSesion } from './hooks/Sesion/useSesion.js';
+import { rutaPorRol } from './hooks/Sesion/apiSesion.js';
+import { useFormularioPostulante } from './hooks/Postulante/useDomain.js';
+
+function LoadingSesion() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#020617',
+      color: '#cbd5e1',
+      fontFamily: 'system-ui, sans-serif',
+    }}>
+      Validando sesion...
+    </div>
+  );
+}
+
+function PublicOnlyRoute({ children }) {
+  const { user, auth, loading } = useSesion();
+
+  if (loading) {
+    return <LoadingSesion />;
+  }
+
+  if (auth && user) {
+    return <Navigate to={rutaPorRol(user)} replace />;
+  }
+
+  return children;
+}
+
+function ProtectedPortalLayout({ allowedRoles }) {
+  const location = useLocation();
+  const { loading, allowed } = useSesion({ allowedRoles, required: true });
+
+  if (loading) {
+    return <LoadingSesion />;
+  }
+
+  if (!allowed) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
+}
+
+function PostulanteFormularioGate() {
+  const { obtenerEstadoFormulario } = useFormularioPostulante();
+  const location = useLocation();
+  const [checking, setChecking] = useState(true);
+  const [requiereFormulario, setRequiereFormulario] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+
+    const consultarFormulario = async () => {
+      setChecking(true);
+
+      try {
+        const data = await obtenerEstadoFormulario();
+
+        if (!activo) return;
+
+        if (!data.httpOk || data.success === false) {
+          setRequiereFormulario(false);
+          return;
+        }
+
+        setRequiereFormulario(Boolean(data.requiere_formulario || !data.completado));
+      } catch {
+        if (activo) {
+          setRequiereFormulario(false);
+        }
+      } finally {
+        if (activo) {
+          setChecking(false);
+        }
+      }
+    };
+
+    consultarFormulario();
+
+    return () => {
+      activo = false;
+    };
+  }, [location.pathname, obtenerEstadoFormulario]);
+
+  if (checking) {
+    return <LoadingSesion />;
+  }
+
+  if (requiereFormulario && location.pathname !== '/formulario') {
+    return <Navigate to="/formulario" replace state={{ from: location }} />;
+  }
+
+  if (!requiereFormulario && location.pathname === '/formulario') {
+    return <Navigate to="/postulante" replace />;
+  }
+
+  return <Outlet />;
+}
 function PostulanteChatLayout() {
   return (
     <>
@@ -57,9 +161,9 @@ function App() {
     <Routes>
 
       {/* ── Públicas ── */}
-      <Route path="/" element={<Home />} />
-      <Route path="/login-admin" element={<LoginAdmin />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+      <Route path="/login-admin" element={<PublicOnlyRoute><LoginAdmin /></PublicOnlyRoute>} />
+      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path='/registro' element={<Registro/>}/>
       <Route path="/verificacion" element={<Verificacion />} />
 
@@ -84,8 +188,7 @@ function App() {
       {/* ================================================================
           RECLUTADOR 
           ================================================================ */}
-      <Route element={<Outlet />}>
-        <Route path="/Vista" element={<Vista />} />
+      <Route element={<ProtectedPortalLayout allowedRoles={['reclutador']} />}>
       <Route path="/reclutador" element={<ReclutadorDashboard />} />
       <Route path="/reclutador/reportes" element={<Reportesmios />} />
       <Route path="/reclutador/vacantes/nueva" element={<VacantesReclutador />} /> 
@@ -93,8 +196,6 @@ function App() {
       <Route path="/reclutador/candidatos" element={<Candidatos />} />
       <Route path="/reclutador/perfil" element={<Perfil />} />
       <Route path="/reclutador/empresa" element={<Empresa />} />
-      <Route path="/reclutador/Candidatos" element={<Candidatos />} />
-      <Route path="/reclutador/Empresa" element={<Empresa />} />
       <Route path="/reclutador/vacantes/:id" element={<VacanteDetalleReclutador />} />
       </Route>
 
@@ -104,8 +205,8 @@ function App() {
       {/* ================================================================
           POSTULANTE  
           ================================================================ */}
-      <Route element={<Outlet />}>
-        <Route element={<Outlet />}>
+      <Route element={<ProtectedPortalLayout allowedRoles={['postulante']} />}>
+        <Route element={<PostulanteFormularioGate />}>
           <Route path="/formulario" element={<Formulario />} />
           <Route element={<PostulanteChatLayout />}>
             <Route path="/postulante" element={<PostulanteDashboard />} />

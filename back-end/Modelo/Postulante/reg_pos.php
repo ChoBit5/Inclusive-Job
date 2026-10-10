@@ -20,6 +20,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 require_once __DIR__ . "/../../Conexion.php";
 require_once __DIR__ . "/pos.php";
 require_once __DIR__ . "/../../config/mailer.php";
+require_once __DIR__ . "/../../config/ratelimit.php";
 
 try {
     /*
@@ -28,20 +29,11 @@ try {
     |--------------------------------------------------------------------------
     */
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $rateFile = sys_get_temp_dir() . "/reg_" . md5($ip);
-    $attempts = [];
-    if (file_exists($rateFile)) {
-        $attempts = json_decode((string)file_get_contents($rateFile), true) ?? [];
-    }
-    $now = time();
-    $attempts = array_filter($attempts, fn($t) => ($now - $t) < 300);
-    if (count($attempts) >= 10) {
+    if (inclusijob_rate_limited('reg_pos', $ip)) {
         http_response_code(429);
         echo json_encode(["success" => false, "message" => "Demasiados intentos, intenta mas tarde"]);
         exit;
     }
-    $attempts[] = $now;
-    file_put_contents($rateFile, json_encode($attempts));
 
     $contentType = $_SERVER["CONTENT_TYPE"] ?? "";
     if (stripos($contentType, "application/json") === false) {

@@ -1,6 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, Users, Briefcase, FileText, Accessibility, Flag, ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
+import { useSesion } from '../../hooks/Sesion/useSesion.js';
+import { confirmLogout, errorAlert } from './alerts';
 const NAV_ITEMS = [{
   to: '/admin',
   label: 'Dashboard',
@@ -57,9 +59,19 @@ export default function Sidebar({
   user
 }) {
   const navigate = useNavigate();
-  const handleLogout = () => {
-    onMobileClose?.();
-    navigate('/');
+  const { logout } = useSesion({ auto: false });
+  const handleLogout = async () => {
+    const confirmed = await confirmLogout();
+    if (!confirmed) return;
+    try {
+      await logout();
+      navigate('/login-admin', { replace: true });
+    } catch (err) {
+      await errorAlert('No se pudo cerrar sesion', err.message || 'Intenta nuevamente.');
+      navigate('/login-admin', { replace: true });
+    } finally {
+      onMobileClose?.();
+    }
   };
   return <>
       

@@ -1,6 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X, LogOut } from 'lucide-react';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
+import { useSesion } from '../../hooks/Sesion/useSesion.js';
+import { confirmLogout, errorAlert } from '../Admin/alerts';
 export default function PortalSidebar({
   theme,
   navItems = [],
@@ -12,9 +14,19 @@ export default function PortalSidebar({
 }) {
   const navigate = useNavigate();
   const t = theme;
-  const handleLogout = () => {
-    onMobileClose?.();
-    navigate('/');
+  const { logout } = useSesion({ auto: false });
+  const handleLogout = async () => {
+    const confirmed = await confirmLogout(t);
+    if (!confirmed) return;
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (err) {
+      await errorAlert('No se pudo cerrar sesion', err.message || 'Intenta nuevamente.', t);
+      navigate('/login', { replace: true });
+    } finally {
+      onMobileClose?.();
+    }
   };
   return <>
       

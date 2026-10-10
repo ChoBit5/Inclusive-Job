@@ -1,11 +1,33 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useSesion } from '../../hooks/Sesion/useSesion.js';
+
+const ADMIN_ROLES = ['administrador'];
+
 export default function AdminLayout() {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const adminUser = { nombre: 'María López', rol: 'Administrador' };
+  const { user: adminUser, loading: checkingSession, allowed } = useSesion({
+    allowedRoles: ADMIN_ROLES,
+    required: true,
+  });
+
+  useEffect(() => {
+    if (!checkingSession && !allowed) {
+      navigate('/login-admin', { replace: true });
+    }
+  }, [allowed, checkingSession, navigate]);
+
+  if (checkingSession || !allowed) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-300">
+        Validando sesion...
+      </div>
+    );
+  }
   return <div className="min-h-screen bg-slate-950 flex">
 
       
