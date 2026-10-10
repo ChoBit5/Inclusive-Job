@@ -513,6 +513,15 @@ ALTER TABLE `reclutadores` MODIFY `id_empresas` INT NULL;
 ALTER TABLE `tokens` MODIFY COLUMN `id_usuario` int(11) NULL;
 -- Nota: `usuarios.foto_perfil` se mantiene varchar(500) porque Google guarda URL; el ALTER a LONGBLOB de origen se deja para Phase 2 junto a la decision de blob unico.
 
+-- Feature 23 (empresa del reclutador): rfc real + duplicados garantizados por la BD.
+-- Antes de los índices, las cadenas vacías de correo/teléfono pasan a NULL (el código nunca guarda '').
+UPDATE `empresas` SET `correo_empresa` = NULL WHERE `correo_empresa` = '';
+UPDATE `empresas` SET `telefono_empresa` = NULL WHERE `telefono_empresa` = '';
+ALTER TABLE `empresas` ADD COLUMN `rfc` VARCHAR(13) NULL AFTER `sitio_web`, ADD UNIQUE KEY `uq_empresas_rfc` (`rfc`);
+ALTER TABLE `empresas` ADD UNIQUE KEY `uq_empresas_nombre` (`nombre_empresas`);
+ALTER TABLE `empresas` ADD UNIQUE KEY `uq_empresas_correo` (`correo_empresa`);
+ALTER TABLE `empresas` ADD COLUMN `telefono_nacional` VARCHAR(10) GENERATED ALWAYS AS (RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`telefono_empresa`,' ',''),'-',''),'(',''),')',''),'+',''),10)) STORED, ADD UNIQUE KEY `uq_empresas_telefono` (`telefono_nacional`);
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
