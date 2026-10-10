@@ -522,6 +522,10 @@ ALTER TABLE `empresas` ADD UNIQUE KEY `uq_empresas_nombre` (`nombre_empresas`);
 ALTER TABLE `empresas` ADD UNIQUE KEY `uq_empresas_correo` (`correo_empresa`);
 ALTER TABLE `empresas` ADD COLUMN `telefono_nacional` VARCHAR(10) GENERATED ALWAYS AS (RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`telefono_empresa`,' ',''),'-',''),'(',''),')',''),'+',''),10)) STORED, ADD UNIQUE KEY `uq_empresas_telefono` (`telefono_nacional`);
 
+-- Feature 22 (perfil del reclutador): el origen leía sector de usuarios pero nunca
+-- se persistía; se guarda en reclutadores.sector ("No especificado" si NULL).
+ALTER TABLE `reclutadores` ADD COLUMN `sector` VARCHAR(100) NULL AFTER `puesto`;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

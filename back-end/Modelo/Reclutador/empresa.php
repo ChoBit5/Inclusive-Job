@@ -4,6 +4,8 @@
 require_once __DIR__ . '/_auth.php';
 require_once __DIR__ . '/../../Conexion.php';
 require_once __DIR__ . '/../../config/sanitize.php';
+require_once __DIR__ . '/../../config/telefono.php';
+require_once __DIR__ . '/../../config/empresa.php';
 
 reclutador_headers();
 
@@ -25,22 +27,7 @@ function empresa_normalizar_telefono($telefono_raw) {
         reclutador_responder(false, 'El numero de telefono solo puede contener numeros, espacios, guiones o parentesis.', null, 400);
     }
 
-    $ladas = [
-        '502', '503', '504', '505', '506', '507',
-        '591', '593', '595', '598',
-        '52', '34', '54', '56', '57', '51', '58', '55',
-        '1',
-    ];
-
-    $nacional = $digitos;
-    if (strlen($digitos) > 10) {
-        foreach ($ladas as $lada) {
-            if (strpos($digitos, $lada) === 0 && strlen($digitos) > strlen($lada)) {
-                $nacional = substr($digitos, strlen($lada));
-                break;
-            }
-        }
-    }
+    $nacional = inclusijob_telefono_nacional($digitos);
 
     if (!preg_match('/^[0-9]{10}$/', $nacional)) {
         reclutador_responder(false, 'El numero de telefono debe contener 10 digitos sin contar la LADA.', null, 400);
@@ -87,30 +74,7 @@ function empresa_validar_sitio_web($sitio_web) {
 }
 
 function empresa_validar_dato_unico($con, $id_empresas_actual, $condicion, $params, $campo) {
-    $sql = 'SELECT id_empresas, nombre_empresas
-            FROM empresas
-            WHERE id_empresas <> ?
-              AND (' . $condicion . ')
-            LIMIT 1';
-    $stmt = mysqli_prepare($con, $sql);
-
-    if (!$stmt) {
-        reclutador_responder(false, 'No se pudo validar si la empresa ya existe.', null, 500);
-    }
-
-    $bind_params = array_merge([(int)$id_empresas_actual], $params);
-    $types = 'i' . str_repeat('s', count($params));
-    mysqli_stmt_bind_param($stmt, $types, ...$bind_params);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    $row = $res ? mysqli_fetch_assoc($res) : null;
-    mysqli_stmt_close($stmt);
-
-    if ($row) {
-        $nombre = trim($row['nombre_empresas'] ?? '');
-        $detalle = $nombre !== '' ? " ({$nombre})" : '';
-        reclutador_responder(false, "Ya existe una empresa registrada con el mismo {$campo}{$detalle}.", null, 409);
-    }
+    inclusijob_empresa_validar_dato_unico($con, (int)$id_empresas_actual, $condicion, $params, $campo, 'reclutador_responder');
 }
 
 function empresa_validar_sin_duplicados($con, $id_empresas_actual, $nombre_empresa, $rfc_empresa, $correo_empresa, $telefono_empresa) {

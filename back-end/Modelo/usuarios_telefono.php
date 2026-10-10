@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../config/telefono.php';
+
 if (!function_exists('usuario_telefono_digitos')) {
     function usuario_telefono_digitos($telefono_raw) {
         return preg_replace('/\D+/', '', (string)$telefono_raw);
@@ -8,28 +10,7 @@ if (!function_exists('usuario_telefono_digitos')) {
 
 if (!function_exists('usuario_telefono_nacional')) {
     function usuario_telefono_nacional($telefono_raw) {
-        $digitos = usuario_telefono_digitos($telefono_raw);
-
-        if ($digitos === '') {
-            return '';
-        }
-
-        $ladas = [
-            "502", "503", "504", "505", "506", "507",
-            "591", "593", "595", "598",
-            "52", "34", "54", "56", "57", "51", "58", "55",
-            "1"
-        ];
-
-        if (strlen($digitos) > 10) {
-            foreach ($ladas as $lada) {
-                if (strpos($digitos, $lada) === 0 && strlen($digitos) > strlen($lada)) {
-                    return substr($digitos, strlen($lada));
-                }
-            }
-        }
-
-        return $digitos;
+        return inclusijob_telefono_nacional(usuario_telefono_digitos($telefono_raw));
     }
 }
 

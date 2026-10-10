@@ -5,7 +5,9 @@ import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 import { reclutadorNav } from "../../components/Portal/Navitems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
 import { useActualizarPerfilReclutador, usePerfilReclutador } from "../../hooks/Reclutador/useDomain.js";
+import { useSesion } from "../../hooks/Sesion/useSesion.js";
 import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
+import { PAISES_LADA, getDefaultLada, splitPhoneWithLada, joinPhone, getInitials } from "../../hooks/Reclutador/perfilHelpers.js";
 const INITIAL_FORM = {
   nombres: "",
   apellidos: "",
@@ -17,105 +19,6 @@ const INITIAL_FORM = {
   sector: "No especificado",
   empresa_validada: 0
 };
-const PAISES_LADA = [{
-  code: "+52",
-  name: "Mexico"
-}, {
-  code: "+1",
-  name: "Estados Unidos"
-}, {
-  code: "+34",
-  name: "Espana"
-}, {
-  code: "+54",
-  name: "Argentina"
-}, {
-  code: "+56",
-  name: "Chile"
-}, {
-  code: "+57",
-  name: "Colombia"
-}, {
-  code: "+51",
-  name: "Peru"
-}, {
-  code: "+58",
-  name: "Venezuela"
-}, {
-  code: "+502",
-  name: "Guatemala"
-}, {
-  code: "+503",
-  name: "El Salvador"
-}, {
-  code: "+504",
-  name: "Honduras"
-}, {
-  code: "+505",
-  name: "Nicaragua"
-}, {
-  code: "+506",
-  name: "Costa Rica"
-}, {
-  code: "+507",
-  name: "Panama"
-}, {
-  code: "+591",
-  name: "Bolivia"
-}, {
-  code: "+593",
-  name: "Ecuador"
-}, {
-  code: "+595",
-  name: "Paraguay"
-}, {
-  code: "+598",
-  name: "Uruguay"
-}, {
-  code: "+55",
-  name: "Brasil"
-}];
-function getDefaultLada() {
-  return "+52";
-}
-function splitPhoneWithLada(phone = "") {
-  const clean = String(phone).trim().replace(/[^\d+]/g, "");
-  if (!clean) return {
-    lada: getDefaultLada(),
-    number: ""
-  };
-  const ladas = [...PAISES_LADA].sort((a, b) => b.code.length - a.code.length);
-  if (clean.startsWith("+")) {
-    const lada = ladas.find(pais => clean.startsWith(pais.code))?.code;
-    if (lada) return {
-      lada,
-      number: clean.slice(lada.length).replace(/\D/g, "")
-    };
-  }
-  const digits = clean.replace(/\D/g, "");
-  if (digits.length > 10) {
-    const lada = ladas.find(pais => {
-      const ladaDigits = pais.code.replace(/\D/g, "");
-      return digits.startsWith(ladaDigits) && digits.length > ladaDigits.length;
-    });
-    if (lada) {
-      const ladaDigits = lada.code.replace(/\D/g, "");
-      return {
-        lada: lada.code,
-        number: digits.slice(ladaDigits.length)
-      };
-    }
-  }
-  return {
-    lada: getDefaultLada(),
-    number: digits
-  };
-}
-function joinPhone(lada, number) {
-  const cleanLada = String(lada || "").replace(/\D/g, "");
-  const cleanNumber = String(number || "").replace(/\D/g, "");
-  return cleanNumber ? `${cleanLada}${cleanNumber}` : "";
-}
 export default function PerfilReclutador() {
   const {
     data,
@@ -126,6 +29,7 @@ export default function PerfilReclutador() {
     actualizarPerfil,
     loading: isSaving
   } = useActualizarPerfilReclutador();
+  const { refetch: refetchSesion } = useSesion({ auto: false });
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [mensaje, setMensaje] = useState({
     texto: "",
@@ -238,6 +142,8 @@ export default function PerfilReclutador() {
         empresa_validada: result.data?.empresa_validada ?? prev.empresa_validada,
         foto_perfil: result.data?.foto_perfil ?? prev.foto_perfil
       }));
+      // El layout antepone la sesión: refrescarla actualiza nombre y foto del sidebar.
+      refetchSesion().catch(() => {});
       setFotoFile(null);
       if (fotoInputRef.current) fotoInputRef.current.value = "";
       if (fotoPreview) {
@@ -579,12 +485,6 @@ function Message({
       fontWeight: 500
     }}>{message.texto}</span>
     </div>;
-}
-function getInitials(name = "") {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "R";
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
 }
 const sectionStyle = {
   background: t.bgSurface,

@@ -16,6 +16,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 require_once __DIR__ . '/../../Conexion.php';
 require_once __DIR__ . '/../usuarios_telefono.php';
 require_once __DIR__ . '/../../config/sanitize.php';
+require_once __DIR__ . '/../../config/uploads.php';
 $con = conectarbd();
 mysqli_set_charset($con, 'utf8mb4');
 
@@ -201,56 +202,15 @@ if ($porcentaje !== '') {
 $foto_perfil_ruta = null;
 
 if (!empty($_FILES['fotoPerfil']['name'])) {
-    $archivo = $_FILES['fotoPerfil'];
-    $extensiones = ['jpg', 'jpeg', 'png', 'webp'];
-    $ext = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
-
-    if (!in_array($ext, $extensiones, true)) {
+    $resFotoSubida = inclusijob_foto_perfil_guardar($id_usuario, $_FILES['fotoPerfil']);
+    if (isset($resFotoSubida['error'])) {
         mysqli_close($con);
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'Formato no valido. Usa JPG, PNG o WEBP.']);
+        http_response_code($resFotoSubida['http']);
+        echo json_encode(['success' => false, 'message' => $resFotoSubida['error']]);
         exit;
     }
 
-    if ($archivo['size'] > 5 * 1024 * 1024) {
-        mysqli_close($con);
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'La imagen no debe superar 5 MB.']);
-        exit;
-    }
-
-    if ($archivo['error'] !== UPLOAD_ERR_OK) {
-        mysqli_close($con);
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'Error al subir el archivo (codigo ' . $archivo['error'] . ').']);
-        exit;
-    }
-
-    // Valida contenido real, no solo extension (texto renombrado a .jpg se rechaza).
-    $info = @getimagesize($archivo['tmp_name']);
-    $mimeOk = $info && in_array($info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true);
-    if (!$mimeOk) {
-        mysqli_close($con);
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'Formato no valido. Usa JPG, PNG o WEBP.']);
-        exit;
-    }
-
-    $carpeta = __DIR__ . '/../../uploads/fotos_perfil/';
-    if (!is_dir($carpeta)) {
-        mkdir($carpeta, 0755, true);
-    }
-
-    $nombre_archivo = 'perfil_' . $id_usuario . '_' . time() . '.' . $ext;
-
-    if (!move_uploaded_file($archivo['tmp_name'], $carpeta . $nombre_archivo)) {
-        mysqli_close($con);
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'No se pudo guardar la imagen.']);
-        exit;
-    }
-
-    $foto_perfil_ruta = 'uploads/fotos_perfil/' . $nombre_archivo;
+    $foto_perfil_ruta = $resFotoSubida['ruta'];
 }
 
 // ── Transacción: usuarios + postulantes + discapacidades ──────
@@ -365,14 +325,8 @@ try {
     $_SESSION['user']['apellido'] = $apellidos;
 
     // Borrado anterior solo tras commit, con triple condición; si falla se ignora.
-    if ($foto_perfil_ruta !== null && $foto_anterior !== '' && $foto_anterior !== $foto_perfil_ruta) {
-        if (strpos($foto_anterior, 'uploads/fotos_perfil/') === 0) {
-            $base = realpath(__DIR__ . '/../../uploads/fotos_perfil');
-            $candidata = realpath(__DIR__ . '/../../' . $foto_anterior);
-            if ($base && $candidata && strpos($candidata, $base) === 0 && is_file($candidata)) {
-                @unlink($candidata);
-            }
-        }
+    if ($foto_perfil_ruta !== null) {
+        inclusijob_foto_borrar_anterior($foto_anterior, $foto_perfil_ruta);
     }
 
     mysqli_close($con);
@@ -390,13 +344,7 @@ try {
 
     // Si la transacción falla, no deja foto huérfana.
     if ($foto_perfil_ruta !== null) {
-        $nueva = realpath(__DIR__ . '/../../' . $foto_perfil_ruta);
-        $base = realpath(__DIR__ . '/../../uploads/fotos_perfil');
-        if ($nueva && $base && strpos($nueva, $base) === 0 && is_file($nueva)) {
-            @unlink($nueva);
-        } else {
-            @unlink(__DIR__ . '/../../' . $foto_perfil_ruta);
-        }
+        inclusijob_foto_borrar_huerfana($foto_perfil_ruta);
     }
 
     http_response_code(500);
