@@ -145,6 +145,10 @@ vite.config.ts.timestamp-*
 >>>>>>> 80f3f53ecc05e606473e5a62682e0c4ea9cb9f71
 
 
+# Fotos de perfil reales (no versionar)
+back-end/uploads/fotos_perfil/*
+!back-end/uploads/fotos_perfil/.gitkeep
+
 AGENTS.md
 MIGRATION.md
 tests/

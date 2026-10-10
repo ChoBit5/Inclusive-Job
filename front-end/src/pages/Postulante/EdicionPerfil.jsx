@@ -3,6 +3,19 @@ import PortalLayout from "../../components/Portal/Portallayout";
 import { postulantTheme } from "../../components/Portal/portalTheme";
 import { postulantNav } from "../../components/Portal/Navitems";
 import { usePerfilPostulante } from "../../hooks/Postulante/useDomain.js";
+import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
+import {
+  PAISES_LADA,
+  getDefaultLada,
+  splitPhoneWithLada,
+  joinPhone,
+  getInitials,
+  parseSkills,
+  parseDescDisc,
+  normalizeDiscapacidadOption,
+} from "../../hooks/Postulante/perfilHelpers.js";
+// Resuelve foto absoluta (Google) tal cual y relativa con la base del backend.
+export const resolverFotoUrl = (src) => resolveAssetUrl(src);
 const t = postulantTheme;
 const TABS = ["info", "skills", "accesibilidad"];
 const TAB_LABELS = {
@@ -10,154 +23,10 @@ const TAB_LABELS = {
   skills: "Skills",
   accesibilidad: "Accesibilidad"
 };
-const PAISES_LADA = [{
-  code: "+52",
-  name: "México"
-}, {
-  code: "+1",
-  name: "Estados Unidos"
-}, {
-  code: "+34",
-  name: "España"
-}, {
-  code: "+54",
-  name: "Argentina"
-}, {
-  code: "+56",
-  name: "Chile"
-}, {
-  code: "+57",
-  name: "Colombia"
-}, {
-  code: "+51",
-  name: "Perú"
-}, {
-  code: "+58",
-  name: "Venezuela"
-}, {
-  code: "+502",
-  name: "Guatemala"
-}, {
-  code: "+503",
-  name: "El Salvador"
-}, {
-  code: "+504",
-  name: "Honduras"
-}, {
-  code: "+505",
-  name: "Nicaragua"
-}, {
-  code: "+506",
-  name: "Costa Rica"
-}, {
-  code: "+507",
-  name: "Panamá"
-}, {
-  code: "+591",
-  name: "Bolivia"
-}, {
-  code: "+593",
-  name: "Ecuador"
-}, {
-  code: "+595",
-  name: "Paraguay"
-}, {
-  code: "+598",
-  name: "Uruguay"
-}];
-function getDefaultLada() {
-  return "+52";
-}
-function splitPhoneWithLada(phone = "") {
-  const clean = String(phone).trim().replace(/[^\d+]/g, "");
-  if (!clean) return {
-    lada: getDefaultLada(),
-    number: ""
-  };
-  const ladas = [...PAISES_LADA].sort((a, b) => b.code.length - a.code.length);
-  if (clean.startsWith("+")) {
-    const lada = ladas.find(pais => clean.startsWith(pais.code))?.code;
-    if (lada) return {
-      lada,
-      number: clean.slice(lada.length).replace(/\D/g, "")
-    };
-  }
-  const digits = clean.replace(/\D/g, "");
-  if (digits.length > 10) {
-    const lada = ladas.find(pais => {
-      const ladaDigits = pais.code.replace(/\D/g, "");
-      return digits.startsWith(ladaDigits) && digits.length > ladaDigits.length;
-    });
-    if (lada) {
-      const ladaDigits = lada.code.replace(/\D/g, "");
-      return {
-        lada: lada.code,
-        number: digits.slice(ladaDigits.length)
-      };
-    }
-  }
-  return {
-    lada: getDefaultLada(),
-    number: digits
-  };
-}
-function joinPhone(lada, number) {
-  const cleanLada = String(lada || "").replace(/\D/g, "");
-  const cleanNumber = String(number || "").replace(/\D/g, "");
-  return cleanNumber ? `${cleanLada}${cleanNumber}` : "";
-}
-function getInitials(name) {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(" ").filter(Boolean);
-  return parts.length === 1 ? parts[0][0].toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-function parseSkills(raw) {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-function parseDescDisc(raw) {
-  if (!raw) return {
-    nota: "",
-    porcentaje: ""
-  };
-  const parts = raw.split(" | ");
-  if (parts.length === 2) return {
-    nota: parts[0],
-    porcentaje: parts[1].replace("%", "")
-  };
-  if (/^\d+%$/.test(raw.trim())) return {
-    nota: "",
-    porcentaje: raw.replace("%", "")
-  };
-  return {
-    nota: raw,
-    porcentaje: ""
-  };
-}
-function normalizeDiscapacidadOption(option) {
-  if (typeof option === "string") {
-    return {
-      id: option,
-      nombre: option,
-      descripcion: ""
-    };
-  }
-  const id = String(option?.id_tipo_discapacidad ?? option?.id ?? option?.value ?? option?.nombre_discapacidad ?? "");
-  return {
-    id,
-    nombre: option?.nombre_discapacidad ?? option?.nombre ?? option?.label ?? id,
-    descripcion: option?.descripcion ?? ""
-  };
-}
 export default function PerfilPostulante() {
   const {
     obtenerPerfil,
-    actualizarPerfil,
-    backendUrl
+    actualizarPerfil
   } = usePerfilPostulante();
   const [perfil, setPerfil] = useState({
     nombre: "",
@@ -217,7 +86,7 @@ export default function PerfilPostulante() {
           rol: data.rol || "",
           email: data.correo || "",
           tel: telefono,
-          foto_perfil: data.foto_perfil ? `${backendUrl}/${data.foto_perfil}` : null,
+          foto_perfil: data.foto_perfil ? resolverFotoUrl(data.foto_perfil) : null,
           experiencia: data.experiencia || "",
           skills,
           discapacidad: discapacidadIds,
@@ -234,7 +103,7 @@ export default function PerfilPostulante() {
       }
     };
     fetchPerfil();
-  }, [backendUrl, obtenerPerfil]);
+  }, [obtenerPerfil]);
   useEffect(() => {
     if (!open) return;
     setTimeout(() => headRef.current?.focus(), 50);
@@ -326,8 +195,8 @@ export default function PerfilPostulante() {
     if (fotoFile) fd.append("fotoPerfil", fotoFile);
     try {
       const data = await actualizarPerfil(fd);
-      if (!data.ok) {
-        setSaveError(data.msg || "Error al guardar. Intenta de nuevo.");
+      if (!data.success) {
+        setSaveError(data.message || "Error al guardar. Intenta de nuevo.");
         setSaving(false);
         return;
       }
