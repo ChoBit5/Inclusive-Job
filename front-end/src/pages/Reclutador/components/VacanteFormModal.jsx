@@ -1,18 +1,12 @@
 import { Accessibility, ArrowRight, CalendarDays, FileText, Loader2, Sparkles, X } from 'lucide-react';
-export const SALARIO_MINIMO_VACANTE = 1000;
-export const SALARIO_MAXIMO_VACANTE = 1000000;
-export const INITIAL_VACANTE_FORM = {
-  titulo_puesto: '',
-  descripcion_puesto: '',
-  requisitos: '',
-  modalidad: 'Presencial',
-  salario_min: '',
-  salario_max: '',
-  fecha_publicacion: '',
-  fecha_cierre: '',
-  estado: 'activa',
-  discapacidades: []
-};
+import { INITIAL_VACANTE_FORM as INITIAL_FORM, SALARIO_MAXIMO_VACANTE as SALARIO_MAX, SALARIO_MINIMO_VACANTE as SALARIO_MIN, getDiscapacidadId, getDiscapacidadNombre, getVacanteDiscapacidadIds as getIds, toDateInputValue as toDate, validateVacanteForm as validateForm } from '../../../hooks/Reclutador/vacantesHelpers.js';
+export const SALARIO_MINIMO_VACANTE = SALARIO_MIN;
+export const SALARIO_MAXIMO_VACANTE = SALARIO_MAX;
+export const INITIAL_VACANTE_FORM = INITIAL_FORM;
+export const getVacanteDiscapacidadIds = getIds;
+export const toDateInputValue = toDate;
+export const validateVacanteForm = validateForm;
+export { getDiscapacidadId, getDiscapacidadNombre };
 export function VacanteFormModal({
   editingVacante,
   formData,
@@ -267,47 +261,4 @@ function Select({
   options
 }) {
   return <label className="block text-xs font-bold uppercase text-slate-400 mb-1">{label}<select value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-purple-500">{options.map(option => <option key={option} value={option}>{option}</option>)}</select></label>;
-}
-export function getDiscapacidadId(item) {
-  return Number(item?.id_tipo_discapacidad ?? item?.id_discapacidad ?? item?.id ?? item) || 0;
-}
-export function getDiscapacidadNombre(item) {
-  return item?.nombre_discapacidad ?? item?.nombre ?? item?.tipo ?? String(item ?? '');
-}
-export function getVacanteDiscapacidadIds(vacante) {
-  if (Array.isArray(vacante?.discapacidad_ids)) {
-    return vacante.discapacidad_ids.map(Number).filter(Boolean);
-  }
-  if (Array.isArray(vacante?.discapacidades)) {
-    return vacante.discapacidades.map(getDiscapacidadId).filter(Boolean);
-  }
-  return [];
-}
-export function toDateInputValue(value) {
-  if (!value) return '';
-  const normalized = String(value).slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : '';
-}
-export function validateVacanteForm(formData) {
-  if (!String(formData?.titulo_puesto ?? '').trim()) {
-    return 'El titulo de la vacante es obligatorio.';
-  }
-  const salarioMin = Number(formData?.salario_min);
-  const salarioMax = Number(formData?.salario_max);
-  const fechaPublicacion = toDateInputValue(formData?.fecha_publicacion);
-  const fechaCierre = toDateInputValue(formData?.fecha_cierre);
-  const salarioInvalido = !Number.isFinite(salarioMin) || !Number.isFinite(salarioMax) || salarioMin < SALARIO_MINIMO_VACANTE || salarioMin > SALARIO_MAXIMO_VACANTE || salarioMax < SALARIO_MINIMO_VACANTE || salarioMax > SALARIO_MAXIMO_VACANTE;
-  if (salarioInvalido) {
-    return 'El salario debe estar entre $1,000 y $1,000,000 pesos.';
-  }
-  if (salarioMin > salarioMax) {
-    return 'El salario maximo debe ser mayor o igual al salario minimo.';
-  }
-  if (!fechaPublicacion || !fechaCierre) {
-    return 'La fecha de publicacion y la fecha de cierre son obligatorias.';
-  }
-  if (fechaPublicacion > fechaCierre) {
-    return 'La fecha de cierre debe ser posterior a la fecha de publicacion.';
-  }
-  return null;
 }

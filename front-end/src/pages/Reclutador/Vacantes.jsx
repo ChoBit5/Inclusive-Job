@@ -7,6 +7,7 @@ import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/
 import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import BubleChat from '../Reclutador/ChatBot.jsx';
 import { DiscapacidadBadges, INITIAL_VACANTE_FORM, VacanteFormModal, getVacanteDiscapacidadIds, toDateInputValue, validateVacanteForm } from './components/VacanteFormModal';
+import { filtrarVacantes, mensajeErrorEliminar } from '../../hooks/Reclutador/vacantesHelpers.js';
 export default function VacantesReclutador() {
   const {
     data,
@@ -135,7 +136,7 @@ export default function VacantesReclutador() {
       setVacantes(prev => prev.filter(v => v.id_vacante !== id_vacante));
       await successAlert('Vacante eliminada', 'La vacante fue eliminada correctamente.', t);
     } catch (err) {
-      await errorAlert('Error al eliminar', err.message || 'No se pudo eliminar la vacante.', t);
+      await errorAlert('Error al eliminar', mensajeErrorEliminar(err), t);
     }
   };
   const handleMejorarIA = async campo => {
@@ -182,13 +183,7 @@ export default function VacantesReclutador() {
     }));
   };
   const vacantesFiltradas = useMemo(() => {
-    return vacantes.filter(vacante => {
-      const titulo = String(vacante.titulo_puesto || '').toLowerCase();
-      const cumpleBusqueda = titulo.includes(busqueda.toLowerCase());
-      const cumpleEstado = filtroEstado === 'Todas' || filtroEstado === 'Activas' && vacante.estado === 'activa' || filtroEstado === 'Pausadas' && vacante.estado === 'pausada';
-      const cumpleModalidad = filtroModalidad === 'Todas las modalidades' || vacante.modalidad === filtroModalidad;
-      return cumpleBusqueda && cumpleEstado && cumpleModalidad;
-    });
+    return filtrarVacantes(vacantes, busqueda, filtroEstado, filtroModalidad);
   }, [busqueda, filtroEstado, filtroModalidad, vacantes]);
   if (loading && vacantes.length === 0) {
     return <PortalLayout theme={t} navItems={reclutadorNav} pageTitle="Vacantes">
