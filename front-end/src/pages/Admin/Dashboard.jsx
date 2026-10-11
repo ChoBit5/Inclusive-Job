@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { StatCard, Badge, Button, PageHeader } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import { useDashboardStats, useEmpresaAcciones } from '../../hooks/Admin/useDomain.js';
+import { buildKpis, escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
 function useCountUp(end, duration = 1400) {
   const [count, setCount] = useState(0);
   const frameRef = useRef(null);
@@ -73,62 +74,7 @@ const VACANTES_COLS = [{
   label: 'Fecha',
   render: v => new Date(v).toLocaleDateString('es-MX')
 }];
-const buildKpis = (s, loading) => [{
-  label: 'Total usuarios',
-  rawValue: s?.total_usuarios,
-  icon: Users,
-  color: 'violet',
-  trend: null,
-  loading
-}, {
-  label: 'Postulantes',
-  rawValue: s?.total_postulantes,
-  icon: UserCheck,
-  color: 'blue',
-  loading
-}, {
-  label: 'Reclutadores',
-  rawValue: s?.total_reclutadores,
-  icon: UserCog,
-  color: 'cyan',
-  loading
-}, {
-  label: 'Empresas',
-  rawValue: s?.total_empresas,
-  icon: Building2,
-  color: 'emerald',
-  loading
-}, {
-  label: 'Empresas pendientes',
-  rawValue: s?.empresas_pendientes,
-  icon: AlertTriangle,
-  color: 'amber',
-  loading
-}, {
-  label: 'Vacantes activas',
-  rawValue: s?.vacantes_activas,
-  icon: Briefcase,
-  color: 'emerald',
-  loading
-}, {
-  label: 'Vacantes cerradas',
-  rawValue: s?.vacantes_cerradas,
-  icon: XCircle,
-  color: 'red',
-  loading
-}, {
-  label: 'Postulaciones',
-  rawValue: s?.postulaciones_realizadas,
-  icon: FileText,
-  color: 'violet',
-  loading
-}, {
-  label: 'Reportes',
-  rawValue: s?.reportes_recibidos,
-  icon: AlertTriangle,
-  color: 'amber',
-  loading
-}];
+const KPI_ICONS = { Users, UserCheck, UserCog, Building2, AlertTriangle, Briefcase, XCircle, FileText };
 export default function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -149,7 +95,7 @@ export default function Dashboard() {
   const handleAprobar = async empresa => {
     const result = await Swal.fire({
       title: '¿Aprobar empresa?',
-      html: `<span style="color:#94a3b8">Se aprobará a <strong style="color:#fff">${empresa.nombre_empresas}</strong> y podrá publicar vacantes.</span>`,
+      html: `<span style="color:#94a3b8">Se aprobará a <strong style="color:#fff">${escapeHtml(empresa.nombre_empresas)}</strong> y podrá publicar vacantes.</span>`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, aprobar',
@@ -204,7 +150,7 @@ export default function Dashboard() {
       <section aria-labelledby="kpi-heading">
         <h2 id="kpi-heading" className="sr-only">Indicadores clave</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-          {buildKpis(stats, loading).map(kpi => <AnimatedStatCard key={kpi.label} {...kpi} />)}
+          {buildKpis(stats, loading, KPI_ICONS).map(kpi => <AnimatedStatCard key={kpi.label} {...kpi} />)}
         </div>
       </section>
 
