@@ -123,10 +123,10 @@ export default function Dashboard() {
         timer: 2000,
         showConfirmButton: false
       });
-    } catch {
+    } catch (err) {
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo aprobar la empresa. Intenta de nuevo.',
+        text: err?.message || 'No se pudo aprobar la empresa. Intenta de nuevo.',
         icon: 'error',
         background: '#1e293b',
         color: '#f8fafc',

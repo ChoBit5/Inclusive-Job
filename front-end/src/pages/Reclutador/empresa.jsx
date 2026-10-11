@@ -17,7 +17,8 @@ const INITIAL_COMPANY = {
   empresa_validada: 0,
   estado_validacion: 0,
   empresa_rechazada: false,
-  requiere_reenvio: false
+  requiere_reenvio: false,
+  motivo_rechazo: ""
 };
 export default function MiEmpresa() {
   const {
@@ -167,7 +168,7 @@ export default function MiEmpresa() {
       gap: 20
     }}>
         <StatusCard companyData={companyData} />
-        {Number(companyData.estado_validacion ?? companyData.empresa_validada) === 2 && <RejectedNotice />}
+        {Number(companyData.estado_validacion ?? companyData.empresa_validada) === 2 && <RejectedNotice motivo={companyData.motivo_rechazo} />}
         {mensaje.texto && <Message message={mensaje} />}
 
         <form onSubmit={handleSubmit} style={panelStyle}>
@@ -280,7 +281,9 @@ function StatusCard({
   }
   return <CardStatus color="#3b82f6" icon={Clock} title="Validacion en curso" text="El equipo administrativo esta revisando tus datos comerciales." />;
 }
-function RejectedNotice() {
+function RejectedNotice({
+  motivo
+}) {
   return <div style={rejectedNoticeStyle}>
       <div style={rejectedIconStyle}>
         <XCircle size={22} />
@@ -302,6 +305,14 @@ function RejectedNotice() {
       }}>
           Revisa y corrige los datos de tu empresa. Al guardar, la solicitud se enviara nuevamente al administrador y quedara pendiente de validacion.
         </p>
+        {motivo ? <p style={{
+        margin: "8px 0 0",
+        color: "#7f1d1d",
+        fontSize: 13,
+        lineHeight: 1.5
+      }}>
+            <strong>Motivo: </strong>{motivo}
+          </p> : null}
       </div>
     </div>;
 }

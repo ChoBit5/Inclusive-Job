@@ -32,3 +32,11 @@ if (!function_exists('admin_usuario_id')) {
         return (int)($user['id'] ?? 0);
     }
 }
+
+if (!function_exists('admin_cuerpo_json')) {
+    // Cuerpo JSON como array; {} o inválido → [].
+    function admin_cuerpo_json() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        return is_array($input) ? $input : [];
+    }
+}

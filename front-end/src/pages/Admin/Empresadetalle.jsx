@@ -5,27 +5,9 @@ import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Modal, { ModalFooter } from '../../components/Admin/Modal';
 import { useEmpresaAcciones, useEmpresaDetalle } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmApprove, confirmSuspend, errorAlert, successAlert } from '../../components/Admin/alerts';
-const ESTADO_MAP = {
-  0: {
-    label: 'Pendiente',
-    variant: 'warning'
-  },
-  1: {
-    label: 'Aprobada',
-    variant: 'success'
-  },
-  2: {
-    label: 'Rechazada',
-    variant: 'danger'
-  },
-  3: {
-    label: 'Suspendida',
-    variant: 'default'
-  }
-};
-function estadoInfo(value) {
-  return ESTADO_MAP[Number(value)] ?? ESTADO_MAP[0];
-}
+import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { getEstadoEmpresa as estadoInfo, mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 function safeDate(value, options = {}) {
   if (!value) return '-';
   const date = new Date(value);
@@ -103,14 +85,14 @@ export default function EmpresaDetalle() {
       await request();
       await refetch();
       await successAlert(successTitle, successText);
-    } catch {
-      errorAlert('Error', 'No se pudo completar la acción. Intenta de nuevo.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo completar la acción. Intenta de nuevo.'));
     } finally {
       setAccionLoading(null);
     }
   };
   const handleAprobar = async () => {
-    const ok = await confirmApprove(empresa.nombre_empresas);
+    const ok = await confirmApprove(escapeHtml(empresa.nombre_empresas));
     if (!ok) return;
     runAction({
       name: 'aprobar',
@@ -120,7 +102,7 @@ export default function EmpresaDetalle() {
     });
   };
   const handleSuspender = async () => {
-    const ok = await confirmSuspend(empresa.nombre_empresas);
+    const ok = await confirmSuspend(escapeHtml(empresa.nombre_empresas));
     if (!ok) return;
     runAction({
       name: 'suspender',
@@ -132,7 +114,7 @@ export default function EmpresaDetalle() {
   const handleReactivar = async () => {
     const ok = await confirmAction({
       title: '¿Reactivar empresa?',
-      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${empresa.nombre_empresas}</strong>.</span>`,
+      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${escapeHtml(empresa.nombre_empresas)}</strong>.</span>`,
       confirmText: 'Reactivar',
       confirmColor: '#16a34a',
       icon: 'question'
@@ -154,8 +136,8 @@ export default function EmpresaDetalle() {
       await successAlert('Rechazada', `${empresa.nombre_empresas} ha sido rechazada.`);
       setRejectModal(false);
       setMotivoRechazo('');
-    } catch {
-      errorAlert('Error', 'No se pudo rechazar la empresa.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo rechazar la empresa.'));
     } finally {
       setAccionLoading(null);
     }
@@ -242,10 +224,11 @@ export default function EmpresaDetalle() {
             {reclutadores.length === 0 ? <p className="text-slate-500 text-sm">No hay reclutadores registrados para esta empresa.</p> : <ul className="space-y-3" role="list">
                 {reclutadores.map(reclutador => {
               const nombre = `${reclutador.nombres ?? ''} ${reclutador.apellidos ?? ''}`.trim() || 'Sin nombre';
+              const foto = resolveAssetUrl(reclutador.foto_perfil);
               return <li key={reclutador.id_reclutador} className="flex items-center gap-3 bg-slate-700/30 rounded-xl p-3">
-                      <div className="w-9 h-9 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-sm flex-shrink-0">
+                      {foto ? <img src={foto} alt={nombre} className="w-9 h-9 rounded-full object-cover border border-violet-500/30 flex-shrink-0" /> : <div className="w-9 h-9 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-sm flex-shrink-0">
                         {nombre.charAt(0).toUpperCase()}
-                      </div>
+                      </div>}
                       <div className="min-w-0">
                         <p className="text-white text-sm font-medium truncate">{nombre}</p>
                         <p className="text-slate-400 text-xs truncate">{reclutador.puesto || 'Sin puesto'}</p>

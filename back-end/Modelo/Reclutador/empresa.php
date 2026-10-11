@@ -125,6 +125,7 @@ if ($accion === 'obtener') {
                 COALESCE(e.direccion, '') AS direccion_empresa,
                 COALESCE(e.estado_validacion, 0) AS empresa_validada,
                 COALESCE(e.estado_validacion, 0) AS estado_validacion,
+                CASE WHEN COALESCE(e.estado_validacion, 0) = 2 THEN e.motivo_rechazo ELSE NULL END AS motivo_rechazo,
                 e.id_empresas
             FROM usuarios u
             LEFT JOIN reclutadores r ON r.id_usuario = u.id_usuario
@@ -149,6 +150,8 @@ if ($accion === 'obtener') {
     $row['estado_validacion'] = (int)$row['estado_validacion'];
     $row['empresa_rechazada'] = $row['estado_validacion'] === 2;
     $row['requiere_reenvio'] = $row['estado_validacion'] === 2;
+    // Motivo visible solo en estado rechazado; en cualquier otro caso NULL.
+    $row['motivo_rechazo'] = $row['estado_validacion'] === 2 && trim((string)($row['motivo_rechazo'] ?? '')) !== '' ? (string)$row['motivo_rechazo'] : null;
     $row['id_empresas'] = $row['id_empresas'] !== null ? (int)$row['id_empresas'] : null;
     reclutador_responder(true, 'Datos de la empresa obtenidos', $row);
 }

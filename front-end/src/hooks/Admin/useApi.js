@@ -23,7 +23,10 @@ export function useFetch(url, options = {}) {
           ...(options.headers || {}),
         },
       });
-      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || data.msg || data.mensaje || `Error ${res.status}: ${res.statusText}`);
+      }
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -59,7 +62,10 @@ export function useApiAction() {
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
-      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || data.msg || data.mensaje || `Error ${res.status}: ${res.statusText}`);
+      }
       return await res.json();
     } catch (err) {
       setError(err.message);

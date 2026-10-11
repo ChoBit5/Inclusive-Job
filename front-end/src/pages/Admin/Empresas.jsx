@@ -8,24 +8,9 @@ import Modal, { ModalFooter } from '../../components/Admin/Modal';
 import { usePagination, useSearch } from '../../hooks/Admin/useApi.js';
 import { useEmpresaAcciones, useEmpresas } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmApprove, confirmSuspend, errorAlert, successAlert } from '../../components/Admin/alerts';
-const ESTADO_MAP = {
-  0: {
-    label: 'Pendiente',
-    variant: 'warning'
-  },
-  1: {
-    label: 'Aprobada',
-    variant: 'success'
-  },
-  2: {
-    label: 'Rechazada',
-    variant: 'danger'
-  },
-  3: {
-    label: 'Suspendida',
-    variant: 'default'
-  }
-};
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { getEstadoEmpresa as getEstado, mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
+const LIMITE = 15;
 const FILTROS = [{
   value: 'todas',
   label: 'Todas'
@@ -42,10 +27,6 @@ const FILTROS = [{
   value: '3',
   label: 'Suspendidas'
 }];
-const LIMITE = 15;
-function getEstado(value) {
-  return ESTADO_MAP[Number(value)] ?? ESTADO_MAP[0];
-}
 function getRfc(row) {
   return row.rfc || row.rfc_empresa || '—';
 }
@@ -92,15 +73,15 @@ export default function Empresas() {
   const empresas = data?.data?.empresas ?? [];
   const total = data?.data?.total ?? 0;
   const handleAprobar = async row => {
-    const ok = await confirmApprove(row.nombre_empresas);
+    const ok = await confirmApprove(escapeHtml(row.nombre_empresas));
     if (!ok) return;
     setAccionId(row.id_empresas);
     try {
       await aprobar(row.id_empresas);
       await refetch();
       successAlert('Aprobada', `${row.nombre_empresas} ya puede operar en la plataforma.`);
-    } catch {
-      errorAlert('Error', 'No se pudo aprobar la empresa. Intenta de nuevo.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo aprobar la empresa. Intenta de nuevo.'));
     } finally {
       setAccionId(null);
     }
@@ -123,22 +104,22 @@ export default function Empresas() {
         open: false,
         empresa: null
       });
-    } catch {
-      errorAlert('Error', 'No se pudo rechazar la empresa.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo rechazar la empresa.'));
     } finally {
       setRejectLoading(false);
     }
   };
   const handleSuspender = async row => {
-    const ok = await confirmSuspend(row.nombre_empresas);
+    const ok = await confirmSuspend(escapeHtml(row.nombre_empresas));
     if (!ok) return;
     setAccionId(row.id_empresas);
     try {
       await suspender(row.id_empresas);
       await refetch();
       successAlert('Suspendida', `${row.nombre_empresas} ha sido suspendida.`);
-    } catch {
-      errorAlert('Error', 'No se pudo suspender la empresa.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo suspender la empresa.'));
     } finally {
       setAccionId(null);
     }
@@ -146,7 +127,7 @@ export default function Empresas() {
   const handleReactivar = async row => {
     const ok = await confirmAction({
       title: '¿Reactivar empresa?',
-      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${row.nombre_empresas}</strong>.</span>`,
+      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${escapeHtml(row.nombre_empresas)}</strong>.</span>`,
       confirmText: 'Reactivar',
       confirmColor: '#16a34a',
       icon: 'question'
@@ -157,8 +138,8 @@ export default function Empresas() {
       await reactivar(row.id_empresas);
       await refetch();
       successAlert('Reactivada', `${row.nombre_empresas} puede operar nuevamente.`);
-    } catch {
-      errorAlert('Error', 'No se pudo reactivar la empresa.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo reactivar la empresa.'));
     } finally {
       setAccionId(null);
     }

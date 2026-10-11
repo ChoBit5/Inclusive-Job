@@ -526,6 +526,10 @@ ALTER TABLE `empresas` ADD COLUMN `telefono_nacional` VARCHAR(10) GENERATED ALWA
 -- se persistía; se guarda en reclutadores.sector ("No especificado" si NULL).
 ALTER TABLE `reclutadores` ADD COLUMN `sector` VARCHAR(100) NULL AFTER `puesto`;
 
+-- Feature 8 (admin empresas): motivo de rechazo visible para el reclutador.
+-- La BD viva ya la tenía; se agrega al script para instalaciones nuevas.
+ALTER TABLE `empresas` ADD COLUMN `motivo_rechazo` VARCHAR(500) NULL AFTER `estado_validacion`;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
