@@ -6,8 +6,8 @@ import { reclutadorNav } from '../../components/Portal/Navitems';
 import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/alerts';
 import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import BubleChat from '../Reclutador/ChatBot.jsx';
-import { DiscapacidadBadges, INITIAL_VACANTE_FORM, VacanteFormModal, getVacanteDiscapacidadIds, toDateInputValue, validateVacanteForm } from './components/VacanteFormModal';
-import { filtrarVacantes, mensajeErrorEliminar } from '../../hooks/Reclutador/vacantesHelpers.js';
+import { DiscapacidadBadges, INITIAL_VACANTE_FORM, VacanteFormModal, validateVacanteForm } from './components/VacanteFormModal';
+import { aplicarEstadoEnLista, armarFormularioEdicion, calcularSiguienteEstado, filtrarVacantes, mensajeErrorEliminar } from '../../hooks/Reclutador/vacantesHelpers.js';
 export default function VacantesReclutador() {
   const {
     data,
@@ -65,18 +65,7 @@ export default function VacantesReclutador() {
       return;
     }
     setEditingVacante(vacante);
-    setFormData(vacante ? {
-      titulo_puesto: vacante.titulo_puesto || '',
-      descripcion_puesto: vacante.descripcion_puesto || '',
-      requisitos: vacante.requisitos || '',
-      modalidad: vacante.modalidad || 'Presencial',
-      salario_min: vacante.salario_min || '',
-      salario_max: vacante.salario_max || '',
-      fecha_publicacion: toDateInputValue(vacante.fecha_publicacion),
-      fecha_cierre: toDateInputValue(vacante.fecha_cierre),
-      estado: vacante.estado || 'activa',
-      discapacidades: getVacanteDiscapacidadIds(vacante)
-    } : INITIAL_VACANTE_FORM);
+    setFormData(vacante ? armarFormularioEdicion(vacante) : INITIAL_VACANTE_FORM);
     setIaSugerencias({});
     setIsModalOpen(true);
   };
@@ -108,11 +97,8 @@ export default function VacantesReclutador() {
     }
   };
   const toggleEstado = async (id_vacante, estadoActual) => {
-    const nuevoEstado = estadoActual === 'activa' ? 'pausada' : 'activa';
-    setVacantes(prev => prev.map(v => v.id_vacante === id_vacante ? {
-      ...v,
-      estado: nuevoEstado
-    } : v));
+    const nuevoEstado = calcularSiguienteEstado(estadoActual);
+    setVacantes(prev => aplicarEstadoEnLista(prev, id_vacante, nuevoEstado));
     try {
       await actualizarEstadoVacante({
         id_vacante,
@@ -120,10 +106,7 @@ export default function VacantesReclutador() {
       });
       await successAlert('Estado actualizado', `La vacante ahora esta ${nuevoEstado}.`, t);
     } catch (err) {
-      setVacantes(prev => prev.map(v => v.id_vacante === id_vacante ? {
-        ...v,
-        estado: estadoActual
-      } : v));
+      setVacantes(prev => aplicarEstadoEnLista(prev, id_vacante, estadoActual));
       await errorAlert('Error al actualizar', err.message || 'No se pudo actualizar el estado.', t);
     }
   };

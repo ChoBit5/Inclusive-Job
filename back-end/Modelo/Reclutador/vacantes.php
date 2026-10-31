@@ -1,6 +1,6 @@
 <?php
-// Vacantes del reclutador (24a): listar, crear (insertar/guardar) y eliminar.
-// Editar y actualizar_estado llegan en la 24b; hasta entonces responden 400.
+// Vacantes del reclutador (24): listar, crear (insertar/guardar), editar,
+// actualizar_estado y eliminar. Detalle en mostrar_vacante_detalle.php.
 require_once __DIR__ . '/_auth.php';
 require_once __DIR__ . '/../../Conexion.php';
 require_once __DIR__ . '/../../config/sanitize.php';
@@ -173,6 +173,36 @@ function vacante_exigir_empresa_aprobada($con, $id_reclutador) {
     }
 }
 
+// Editar y reactivar exigen empresa aprobada; pausar siempre está permitido.
+function vacante_exigir_empresa_si_activa($con, $id_reclutador, $estado) {
+    if ($estado === 'activa' && vacante_empresa_validada($con, $id_reclutador) !== 1) {
+        reclutador_responder(false, 'No puedes publicar o modificar vacantes hasta que tu empresa sea aprobada por el administrador.', null, 403);
+    }
+}
+
+function vacante_estado_actual($con, $id_vacante, $id_reclutador) {
+    $stmt = mysqli_prepare($con, 'SELECT estado FROM vacantes WHERE id_vacante = ? AND id_reclutador = ? LIMIT 1');
+    if (!$stmt) {
+        error_log('vacantes: no se pudo leer el estado de la vacante ' . $id_vacante);
+        reclutador_responder(false, 'No se pudo validar la vacante.', null, 500);
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $id_vacante, $id_reclutador);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (string)$row['estado'] : null;
+}
+
+function vacante_exigir_modificable($con, $id_vacante, $id_reclutador) {
+    if (!vacante_pertenece_reclutador($con, $id_vacante, $id_reclutador)) {
+        reclutador_responder(false, 'No se encontro la vacante.', null, 404);
+    }
+    if (vacante_estado_actual($con, $id_vacante, $id_reclutador) === 'eliminada') {
+        reclutador_responder(false, 'Esta vacante fue suspendida por el administrador y no puede modificarse.', null, 403);
+    }
+}
+
 function vacante_validar_salarios($salario_min_raw, $salario_max_raw) {
     if ($salario_min_raw === '' || $salario_max_raw === '' || $salario_min_raw === null || $salario_max_raw === null) {
         reclutador_responder(false, 'El salario debe estar entre $1,000 y $1,000,000 pesos.', null, 400);
@@ -339,6 +369,138 @@ if (($accion === 'insertar' || $accion === 'guardar') && ($_SERVER['REQUEST_METH
         mysqli_rollback($con);
         error_log('vacantes crear: ' . $e->getMessage());
         reclutador_responder(false, 'No se pudo crear la vacante.', null, 500);
+    }
+}
+
+if ($accion === 'editar' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $id_vacante = (int)($data['id_vacante'] ?? 0);
+
+    if (!$id_vacante) {
+        reclutador_responder(false, 'Faltan datos para actualizar la vacante.', null, 400);
+    }
+
+    vacante_exigir_modificable($con, $id_vacante, $id_reclutador);
+
+    $estado = trim((string)($data['estado'] ?? 'activa'));
+    vacante_exigir_empresa_si_activa($con, $id_reclutador, $estado);
+
+    $titulo = inclusijob_limpio($data['titulo_puesto'] ?? '');
+    $descripcion = inclusijob_limpio($data['descripcion_puesto'] ?? '');
+    $requisitos = inclusijob_limpio($data['requisitos'] ?? '');
+    $modalidad = trim((string)($data['modalidad'] ?? 'Presencial'));
+
+    if ($titulo === '') {
+        reclutador_responder(false, 'El titulo de la vacante es obligatorio.', null, 400);
+    }
+    if (mb_strlen($titulo) > 200) {
+        reclutador_responder(false, 'El titulo de la vacante no debe superar 200 caracteres.', null, 400);
+    }
+    if (mb_strlen($descripcion) > 5000) {
+        reclutador_responder(false, 'La descripcion de la vacante no debe superar 5000 caracteres.', null, 400);
+    }
+    if (mb_strlen($requisitos) > 5000) {
+        reclutador_responder(false, 'Los requisitos de la vacante no deben superar 5000 caracteres.', null, 400);
+    }
+    if (!in_array($modalidad, ['Presencial', 'Remoto', 'Hibrido'], true)) {
+        reclutador_responder(false, 'La modalidad debe ser Presencial, Remoto o Hibrido.', null, 400);
+    }
+    if (!in_array($estado, ['activa', 'pausada'], true)) {
+        reclutador_responder(false, 'El estado debe ser activa o pausada.', null, 400);
+    }
+
+    $salarios = vacante_validar_salarios($data['salario_min'] ?? null, $data['salario_max'] ?? null);
+    $salario_min = $salarios[0];
+    $salario_max = $salarios[1];
+    $fechas = vacante_validar_fechas($data['fecha_publicacion'] ?? '', $data['fecha_cierre'] ?? '');
+    $fecha_publicacion = $fechas[0];
+    $fecha_cierre = $fechas[1];
+    $discapacidades = vacante_validar_discapacidades($con, vacante_discapacidad_ids($data['discapacidades'] ?? []));
+
+    try {
+        mysqli_begin_transaction($con);
+
+        $sql = "UPDATE vacantes
+                SET titulo_puesto = ?, descripcion_puesto = ?, requisitos = ?, modalidad = ?,
+                    salario_min = ?, salario_max = ?, estado = ?, fecha_publicacion = ?, fecha_cierre = ?
+                WHERE id_vacante = ? AND id_reclutador = ?";
+        $stmt = mysqli_prepare($con, $sql);
+        if (!$stmt) {
+            throw new Exception('No se pudo actualizar la vacante.');
+        }
+        mysqli_stmt_bind_param($stmt, 'ssssddsssii', $titulo, $descripcion, $requisitos, $modalidad, $salario_min, $salario_max, $estado, $fecha_publicacion, $fecha_cierre, $id_vacante, $id_reclutador);
+
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            throw new Exception('No se pudo actualizar la vacante.');
+        }
+        mysqli_stmt_close($stmt);
+
+        if (!vacante_sync_discapacidades($con, $id_vacante, $discapacidades)) {
+            throw new Exception('No se pudieron guardar las discapacidades de la vacante.');
+        }
+
+        mysqli_commit($con);
+        reclutador_responder(true, 'Vacante actualizada con exito');
+    } catch (Throwable $e) {
+        mysqli_rollback($con);
+        error_log('vacantes editar: ' . $e->getMessage());
+        reclutador_responder(false, 'No se pudo actualizar la vacante.', null, 500);
+    }
+}
+
+if ($accion === 'actualizar_estado' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $id_vacante = (int)($data['id_vacante'] ?? 0);
+    $estado = trim((string)($data['estado'] ?? 'activa'));
+
+    if (!$id_vacante) {
+        reclutador_responder(false, 'ID de vacante requerido.', null, 400);
+    }
+
+    if (!in_array($estado, ['activa', 'pausada'], true)) {
+        reclutador_responder(false, 'El estado debe ser activa o pausada.', null, 400);
+    }
+
+    vacante_exigir_empresa_si_activa($con, $id_reclutador, $estado);
+
+    // La suspendida gana sobre la empresa: se revisa primero para que el
+    // mensaje sea el del recurso aunque la empresa tampoco esté aprobada.
+    $actual = vacante_estado_actual($con, $id_vacante, $id_reclutador);
+    if ($actual === null) {
+        reclutador_responder(false, 'No se encontro la vacante.', null, 404);
+    }
+    if ($actual === 'eliminada') {
+        reclutador_responder(false, 'Esta vacante fue suspendida por el administrador y no puede modificarse.', null, 403);
+    }
+    if ($actual === $estado) {
+        reclutador_responder(true, 'Estado actualizado');
+    }
+
+    try {
+        // El `<> 'eliminada'` cubre la carrera de una suspensión entre la
+        // lectura y la escritura: 0 filas → se re-lee y responde 403.
+        $stmt = mysqli_prepare($con, "UPDATE vacantes SET estado = ? WHERE id_vacante = ? AND id_reclutador = ? AND estado <> 'eliminada'");
+        if (!$stmt) {
+            throw new Exception('No se pudo actualizar el estado.');
+        }
+        mysqli_stmt_bind_param($stmt, 'sii', $estado, $id_vacante, $id_reclutador);
+
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            throw new Exception('No se pudo actualizar el estado.');
+        }
+
+        if (mysqli_stmt_affected_rows($stmt) !== 1) {
+            mysqli_stmt_close($stmt);
+            if (vacante_estado_actual($con, $id_vacante, $id_reclutador) === 'eliminada') {
+                reclutador_responder(false, 'Esta vacante fue suspendida por el administrador y no puede modificarse.', null, 403);
+            }
+            throw new Exception('No se pudo actualizar el estado.');
+        }
+        mysqli_stmt_close($stmt);
+        reclutador_responder(true, 'Estado actualizado');
+    } catch (Throwable $e) {
+        error_log('vacantes estado: ' . $e->getMessage());
+        reclutador_responder(false, 'No se pudo actualizar el estado.', null, 500);
     }
 }
 

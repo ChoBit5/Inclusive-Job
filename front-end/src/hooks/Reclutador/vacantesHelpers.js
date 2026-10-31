@@ -83,6 +83,32 @@ export function filtrarVacantes(vacantes = [], busqueda = '', filtroEstado = 'To
   });
 }
 
+// Arma el formulario de edición desde una vacante (misma lógica que
+// handleOpenModal en Vacantes.jsx, sin cambiar conducta).
+export function armarFormularioEdicion(vacante) {
+  return {
+    titulo_puesto: vacante?.titulo_puesto || '',
+    descripcion_puesto: vacante?.descripcion_puesto || '',
+    requisitos: vacante?.requisitos || '',
+    modalidad: vacante?.modalidad || 'Presencial',
+    salario_min: vacante?.salario_min || '',
+    salario_max: vacante?.salario_max || '',
+    fecha_publicacion: toDateInputValue(vacante?.fecha_publicacion),
+    fecha_cierre: toDateInputValue(vacante?.fecha_cierre),
+    estado: vacante?.estado || 'activa',
+    discapacidades: getVacanteDiscapacidadIds(vacante),
+  };
+}
+
+// Interruptor activa/pausada de la tabla (mismo toggle optimista + reversión).
+export function calcularSiguienteEstado(estadoActual) {
+  return estadoActual === 'activa' ? 'pausada' : 'activa';
+}
+
+export function aplicarEstadoEnLista(vacantes = [], idVacante, estado) {
+  return (vacantes ?? []).map((v) => (v.id_vacante === idVacante ? { ...v, estado } : v));
+}
+
 // El mensaje del servidor manda (explica el 409); el texto actual queda de respaldo.
 export function mensajeErrorEliminar(err) {
   const mensaje = err instanceof Error ? err.message : String(err?.message ?? '');

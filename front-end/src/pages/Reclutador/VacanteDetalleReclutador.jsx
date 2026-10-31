@@ -8,6 +8,7 @@ import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/alerts';
 import { useDetalleVacanteReclutador, useGuardarVacanteReclutador } from '../../hooks/Reclutador/useDomain.js';
+import { mensajeErrorEliminar } from '../../hooks/Reclutador/vacantesHelpers.js';
 const VACANTE_BADGE = {
   activa: 'success',
   pausada: 'warning',
@@ -85,7 +86,7 @@ export default function VacanteDetalleReclutador() {
       await successAlert('Vacante eliminada', 'La vacante fue eliminada correctamente.', t);
       navigate('/reclutador/vacantes');
     } catch (err) {
-      await errorAlert('Error al eliminar', err.message || 'No se pudo eliminar la vacante.', t);
+      await errorAlert('Error al eliminar', mensajeErrorEliminar(err), t);
       setActionLoading(null);
     }
   };
