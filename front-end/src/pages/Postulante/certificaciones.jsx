@@ -5,6 +5,7 @@ import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 import { useAnalisisCvIA, useDocumentosPostulante, usePostulanteChatHistorial } from '../../hooks/Postulante/useDomain.js';
+import { validateCvFile } from '../../hooks/Postulante/cvHelpers.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',
@@ -173,6 +174,7 @@ export default function PostulanteDashboard() {
   const [subiendo, setSubiendo] = useState(false);
   const [tieneCV, setTieneCV] = useState(null);
   const [cvPreviewUrl, setCvPreviewUrl] = useState('');
+  const [cvError, setCvError] = useState('');
   const [analisisCV, setAnalisisCV] = useState(null);
   const {
     analizarCV,
@@ -182,6 +184,8 @@ export default function PostulanteDashboard() {
     cargarHistorial
   } = usePostulanteChatHistorial();
   const [certificaciones, setCertificaciones] = useState(null);
+  const [certificacionesError, setCertificacionesError] = useState('');
+  const [historialError, setHistorialError] = useState('');
   const [modalCert, setModalCert] = useState(false);
   const [guardandoCert, setGuardandoCert] = useState(false);
   const [editandoCert, setEditandoCert] = useState(null);
@@ -210,6 +214,7 @@ export default function PostulanteDashboard() {
         const existeCv = await verificarCv();
         if (!active) return;
         setTieneCV(existeCv);
+        setCvError('');
         if (!existeCv) {
           setCvPreviewUrl('');
           return;
@@ -218,9 +223,10 @@ export default function PostulanteDashboard() {
         if (!active) return;
         objectUrl = URL.createObjectURL(blob);
         setCvPreviewUrl(objectUrl);
-      } catch {
+      } catch (error) {
         if (!active) return;
-        setTieneCV(false);
+        setTieneCV(null);
+        setCvError(error instanceof Error ? error.message : 'No se pudo comprobar el CV.');
         setCvPreviewUrl('');
       }
     }
@@ -231,7 +237,18 @@ export default function PostulanteDashboard() {
     };
   }, [obtenerCvBlob, verificarCv]);
   useEffect(() => {
-    listarCertificaciones().then(data => setCertificaciones(data.ok ? data.certificaciones : [])).catch(() => setCertificaciones([]));
+    listarCertificaciones().then(data => {
+      if (data.ok) {
+        setCertificaciones(data.certificaciones);
+        setCertificacionesError('');
+      } else {
+        setCertificaciones([]);
+        setCertificacionesError(data.msg ?? 'No se pudieron cargar las certificaciones.');
+      }
+    }).catch(() => {
+      setCertificaciones([]);
+      setCertificacionesError('No se pudieron cargar las certificaciones.');
+    });
   }, [listarCertificaciones]);
   useEffect(() => {
     let active = true;
@@ -242,18 +259,17 @@ export default function PostulanteDashboard() {
       if (payload?.analisis) {
         setAnalisisCV(cleanAiValue(payload.analisis));
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      if (active) setHistorialError(error instanceof Error ? error.message : 'No se pudo cargar el historial del CV.');
+    });
     return () => {
       active = false;
     };
   }, [cargarHistorial]);
   async function subirCV(file) {
-    if (file.type !== 'application/pdf') {
-      alert('Solo se permiten archivos PDF.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('El archivo no debe superar 5 MB.');
+    const validationError = validateCvFile(file);
+    if (validationError) {
+      alert(validationError);
       return;
     }
     setSubiendo(true);
@@ -264,6 +280,7 @@ export default function PostulanteDashboard() {
       if (data.ok) {
         await successAlert('CV actualizado', 'Tu currículum se actualizó correctamente.', t);
         setTieneCV(true);
+        setCvError('');
         const blob = await obtenerCvBlob();
         const nextUrl = URL.createObjectURL(blob);
         setCvPreviewUrl(prev => {
@@ -278,7 +295,9 @@ export default function PostulanteDashboard() {
       }
     } catch (e) {
       console.error(e);
-      await errorAlert('Error de conexión', 'No se pudo conectar con el servidor.', t);
+      const message = e instanceof Error ? e.message : 'No se pudo conectar con el servidor.';
+      setCvError(message);
+      await errorAlert('Error de conexión', message, t);
     } finally {
       setSubiendo(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -325,8 +344,10 @@ export default function PostulanteDashboard() {
         sourceUrl: nextUrl,
         title: 'Mi CV'
       });
-    } catch {
-      await errorAlert('No se pudo abrir el CV', 'No fue posible recuperar el archivo PDF en este momento.', t);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible recuperar el archivo PDF en este momento.';
+      setCvError(message);
+      await errorAlert('No se pudo abrir el CV', message, t);
     }
   }
   function abrirNuevaCert() {
@@ -511,7 +532,7 @@ export default function PostulanteDashboard() {
             padding: '20px',
             borderBottom: `1px solid ${t.border}`
           }}>
-              {tieneCV === null && <div style={{
+              {tieneCV === null && !cvError && <div style={{
               height: '420px',
               display: 'flex',
               alignItems: 'center',
@@ -523,7 +544,26 @@ export default function PostulanteDashboard() {
                 animation: 'spin 1s linear infinite'
               }} />
                 </div>}
-              {tieneCV === false && <div style={{
+              {cvError && tieneCV !== true && <div style={{
+              height: '420px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              color: '#991b1b',
+              background: '#fff7f7',
+              border: '1px solid #fecaca',
+              borderRadius: '12px',
+              padding: '24px',
+              textAlign: 'center'
+            }}>
+                  <FileText size={32} opacity={0.6} />
+                  <p style={{ margin: 0, fontWeight: 700 }}>No se pudo comprobar el CV</p>
+                  <p style={{ margin: 0, fontSize: '12px' }}>{cvError}</p>
+                  <ActionBtn icon={<Upload size={13} />} label="Subir CV" onClick={() => fileInputRef.current?.click()} />
+                </div>}
+              {tieneCV === false && !cvError && <div style={{
               height: '420px',
               display: 'flex',
               flexDirection: 'column',
@@ -553,7 +593,8 @@ export default function PostulanteDashboard() {
               borderRadius: '12px',
               background: '#f8f9fb'
             }} />}
-            </div>
+              {cvError && tieneCV === true && <p style={{ margin: '12px 0 0', color: '#991b1b', fontSize: '12px', textAlign: 'center' }}>{cvError}</p>}
+             </div>
             <input ref={fileInputRef} type="file" accept="application/pdf" style={{
             display: 'none'
           }} onChange={handleFileChange} />
@@ -577,6 +618,7 @@ export default function PostulanteDashboard() {
           
           <Card>
             <SectionHead title="Mis certificaciones" sub={certificaciones ? `${certificaciones.length} registradas` : ''} action="Añadir" onAction={abrirNuevaCert} />
+            {certificacionesError && <p style={{ margin: '14px 20px 0', color: '#991b1b', fontSize: '12px' }}>{certificacionesError}</p>}
             {certificaciones === null && <div style={{
             height: '120px',
             display: 'flex',
@@ -652,6 +694,7 @@ export default function PostulanteDashboard() {
               </ul>}
           </Card>
 
+          {historialError && <p style={{ margin: '16px 0 0', color: '#991b1b', fontSize: '12px' }}>{historialError}</p>}
         </div>
 
         {(analizandoCV || analisisCV) && <div style={{

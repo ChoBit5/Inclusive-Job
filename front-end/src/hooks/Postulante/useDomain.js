@@ -5,6 +5,7 @@
 import { useCallback, useState } from 'react';
 import { requestPostulante, useApiAction, useFetch } from './useApi';
 import { BACKEND_URL, ENDPOINTS } from './apiPostulante';
+import { readCvErrorMessage } from './cvHelpers.js';
 
 async function requestData(url, options) {
   const { res, data } = await requestPostulante(url, options);
@@ -64,7 +65,8 @@ async function obtenerCvBlobPostulante() {
 
   const contentType = res.headers.get('content-type') || '';
   if (!res.ok || !contentType.includes('application/pdf')) {
-    throw new Error('No hay CV PDF disponible.');
+    const responseText = await res.text();
+    throw new Error(readCvErrorMessage(responseText, 'No hay CV PDF disponible.'));
   }
 
   return res.blob();
@@ -108,7 +110,15 @@ export function useDocumentosPostulante() {
       credentials: 'include',
     });
 
-    return res.ok && res.headers.get('content-type')?.includes('application/pdf');
+    if (res.status === 404) return false;
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/pdf')) {
+      const responseText = await res.text();
+      throw new Error(readCvErrorMessage(responseText, 'No se pudo comprobar el CV.'));
+    }
+
+    return true;
   }, []);
   const subirCv = useCallback((formData) => (
     requestDocumentoData(ENDPOINTS.documentos.cv, { method: 'POST', body: formData })

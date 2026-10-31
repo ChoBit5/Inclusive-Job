@@ -24,7 +24,22 @@ export default function PdfPreviewModal({
         return;
       }
       try {
-        throw new Error('El documento se muestra solo cuando se selecciona un archivo local.');
+        const res = await fetch(sourceUrl, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          throw new Error('No se pudo recuperar el PDF.');
+        }
+
+        const blob = await res.blob();
+        if (!active) return;
+
+        const objectUrl = URL.createObjectURL(blob);
+        createdUrlRef.current = objectUrl;
+        setViewerUrl(objectUrl);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : 'No se pudo mostrar el PDF.');
       } finally {

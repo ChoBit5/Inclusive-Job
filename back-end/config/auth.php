@@ -25,7 +25,12 @@ if (!function_exists('requerirSesion')) {
 
         if (!isset($_SESSION["user"]) || empty($_SESSION["user"]["id"])) {
             http_response_code(401);
-            echo json_encode(["success" => false, "message" => "Sesión no válida. Inicia sesión nuevamente."]);
+            echo json_encode([
+                "success" => false,
+                "message" => "Sesión no válida. Inicia sesión nuevamente.",
+                "ok" => false,
+                "msg" => "Sesión no válida. Inicia sesión nuevamente.",
+            ]);
             exit;
         }
 
@@ -44,7 +49,12 @@ if (!function_exists('requerirRol')) {
 
         if (!in_array($canonico, $permitidos, true)) {
             http_response_code(403);
-            echo json_encode(["success" => false, "message" => "No tienes permisos para acceder a este recurso."]);
+            echo json_encode([
+                "success" => false,
+                "message" => "No tienes permisos para acceder a este recurso.",
+                "ok" => false,
+                "msg" => "No tienes permisos para acceder a este recurso.",
+            ]);
             exit;
         }
 
