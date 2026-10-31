@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import PortalSidebar from './Portalsidebar';
 import PortalHeader from './Portalheader';
 import { useSesion } from '../../hooks/Sesion/useSesion.js';
+import { normalizarUsuarioSesion } from '../../hooks/Sesion/apiSesion.js';
 const EMPTY_USER = {};
 export default function PortalLayout({
   theme,
@@ -10,13 +11,14 @@ export default function PortalLayout({
   user = EMPTY_USER,
   children,
   pageTitle,
-  headerActions
+  headerActions,
+  notifications = 0
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const t = theme;
   const { user: sessionUser } = useSesion();
-  const currentUser = sessionUser ?? user;
+  const currentUser = normalizarUsuarioSesion(sessionUser || {}, user);
   return <div style={{
     minHeight: '100svh',
     width: '100%',
@@ -45,7 +47,7 @@ export default function PortalLayout({
       paddingLeft: 0,
       transition: 'padding-left 0.3s cubic-bezier(0.4,0,0.2,1)'
     }} className={collapsed ? 'lg:!pl-[68px]' : 'lg:!pl-[256px]'}>
-        <PortalHeader theme={t} onMobileMenuOpen={() => setMobileOpen(true)} title={pageTitle} actions={headerActions} />
+        <PortalHeader theme={t} onMobileMenuOpen={() => setMobileOpen(true)} title={pageTitle} actions={headerActions} notifications={notifications} />
 
         <main id="main-content" role="main" aria-label="Contenido principal" style={{
         flex: 1,

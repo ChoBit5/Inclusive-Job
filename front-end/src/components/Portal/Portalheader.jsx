@@ -1,9 +1,10 @@
-import { Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 export default function PortalHeader({
   theme,
   onMobileMenuOpen,
   title,
-  actions
+  actions,
+  notifications = 0
 }) {
   const t = theme;
   return <header style={{
@@ -67,6 +68,26 @@ export default function PortalHeader({
     }}>
           {actions}
         </div>}
+
+      <div role="status" aria-live="polite" aria-label={`${notifications} reportes activos`} style={{
+      minWidth: '32px',
+      height: '32px',
+      padding: '0 8px',
+      borderRadius: '10px',
+      border: `1px solid ${t.border}`,
+      background: t.bgElevated,
+      color: t.textSecondary,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '5px',
+      fontSize: '12px',
+      fontWeight: 700,
+      flexShrink: 0
+    }}>
+        <Bell size={14} aria-hidden="true" />
+        <span>{notifications}</span>
+      </div>
 
       <div className="hidden md:flex" style={{
       display: 'none',

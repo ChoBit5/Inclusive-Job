@@ -9,6 +9,7 @@ import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 import { useDiscapacidadesReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useReclutadorDashboard } from '../../hooks/Reclutador/useDomain.js';
+import { buildDashboardStats, estadoAvisoEmpresa, normalizarChartDashboard } from '../../hooks/Reclutador/dashboardHelpers.js';
 import { INITIAL_VACANTE_FORM, VacanteFormModal, validateVacanteForm } from './components/VacanteFormModal';
 const ESTADO_COLOR = {
   activa: {
@@ -237,37 +238,15 @@ export default function ReclutadorDashboard() {
   const currentUser = dashboard?.user ?? {};
   const currentEmpresa = dashboard?.empresa ?? {};
   const currentUserAvatar = resolveAssetUrl(currentUser.avatar || currentUser.foto_perfil);
-  const empresaEstado = String(currentEmpresa.estado || '').toLowerCase();
-  const empresaEstadoValidacion = Number(currentEmpresa.estado_validacion ?? (currentEmpresa.aprobada ? 1 : 0));
-  const empresaRechazada = empresaEstado === 'rechazada' || empresaEstadoValidacion === 2 || currentEmpresa.requiere_reenvio === true;
-  const empresaAprobada = Boolean(currentEmpresa && (currentEmpresa.aprobada ?? currentEmpresa.estado === 'aprobada'));
+  const avisoEmpresa = estadoAvisoEmpresa(currentEmpresa);
+  const empresaAprobada = avisoEmpresa.puedePublicar;
   const catalogoDiscapacidades = useMemo(() => {
     const payload = discapacidadesData?.data;
     if (Array.isArray(payload)) return payload;
     return payload?.discapacidades ?? [];
   }, [discapacidadesData]);
-  const stats = [{
-    label: 'Vacantes activas',
-    value: Number(dashboard?.stats?.vacantes_activas ?? 0),
-    icon: Briefcase,
-    color: '#7c3aed'
-  }, {
-    label: 'Candidatos totales',
-    value: Number(dashboard?.stats?.candidatos_totales ?? 0),
-    icon: Users,
-    color: '#8b5cf6'
-  }, {
-    label: 'Postulaciones hoy',
-    value: Number(dashboard?.stats?.postulaciones_hoy ?? 0),
-    icon: TrendingUp,
-    color: '#6d28d9'
-  }, {
-    label: 'Reportes activos',
-    value: Number(dashboard?.stats?.reportes_activos ?? 0),
-    icon: AlertTriangle,
-    color: '#f59e0b'
-  }];
-  const chartData = dashboard?.chart ?? [];
+  const stats = buildDashboardStats(dashboard?.stats, { Briefcase, Users, TrendingUp, AlertTriangle });
+  const chartData = normalizarChartDashboard(dashboard?.chart);
   const vacantesRecientes = dashboard?.vacantes_recientes ?? [];
   const candidatosRecientes = dashboard?.candidatos_recientes ?? [];
   const closeModal = () => {
@@ -283,7 +262,7 @@ export default function ReclutadorDashboard() {
   const guardarNuevaVacante = async e => {
     e.preventDefault();
     if (!empresaAprobada) {
-      await errorAlert(empresaRechazada ? 'Empresa rechazada' : 'Empresa pendiente', empresaRechazada ? 'Tu empresa fue rechazada. Corrige y reenvia los datos de tu empresa para una nueva validacion.' : 'No puedes publicar vacantes hasta que tu empresa sea validada.', t);
+      await errorAlert(avisoEmpresa.titulo, avisoEmpresa.descripcion, t);
       return;
     }
     const validationMessage = validateVacanteForm(formData);
@@ -348,7 +327,7 @@ export default function ReclutadorDashboard() {
       [campo]: null
     }));
   };
-  return <PortalLayout theme={t} navItems={reclutadorNav} user={currentUser} pageTitle="Dashboard" notifications={stats[3].value} headerActions={empresaAprobada && <button onClick={openModal} style={{
+  return <PortalLayout theme={t} navItems={reclutadorNav} user={currentUser} pageTitle="Dashboard" notifications={stats[3].value} headerActions={<button onClick={openModal} disabled={!empresaAprobada} aria-label={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.titulo} title={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.descripcion} style={{
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
@@ -359,7 +338,8 @@ export default function ReclutadorDashboard() {
     color: '#fff',
     fontSize: '13px',
     fontWeight: 600,
-    cursor: 'pointer'
+    cursor: empresaAprobada ? 'pointer' : 'not-allowed',
+    opacity: empresaAprobada ? 1 : 0.55
   }}>
             <Plus size={15} />
             Nueva vacante
@@ -409,9 +389,9 @@ export default function ReclutadorDashboard() {
             </button>
           </div>}
 
-        {!empresaAprobada && <div style={{
-        background: empresaRechazada ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.08)',
-        border: `1px solid ${empresaRechazada ? 'rgba(239,68,68,0.30)' : 'rgba(245,158,11,0.25)'}`,
+        {avisoEmpresa.visible && <div style={{
+        background: avisoEmpresa.estado === 'rechazada' ? 'rgba(239,68,68,0.10)' : avisoEmpresa.estado === 'suspendida' ? 'rgba(100,116,139,0.14)' : 'rgba(245,158,11,0.08)',
+        border: `1px solid ${avisoEmpresa.estado === 'rechazada' ? 'rgba(239,68,68,0.30)' : avisoEmpresa.estado === 'suspendida' ? 'rgba(148,163,184,0.30)' : 'rgba(245,158,11,0.25)'}`,
         borderRadius: '14px',
         padding: '16px 20px',
         display: 'flex',
@@ -426,7 +406,7 @@ export default function ReclutadorDashboard() {
           gap: '12px'
         }}>
               <AlertTriangle size={20} style={{
-            color: empresaRechazada ? '#ef4444' : '#f59e0b',
+            color: avisoEmpresa.estado === 'rechazada' ? '#ef4444' : avisoEmpresa.estado === 'suspendida' ? '#94a3b8' : '#f59e0b',
             flexShrink: 0
           }} />
               <div>
@@ -434,31 +414,31 @@ export default function ReclutadorDashboard() {
               margin: 0,
               fontSize: '14px',
               fontWeight: 700,
-              color: empresaRechazada ? '#fca5a5' : '#fbbf24'
+              color: avisoEmpresa.estado === 'rechazada' ? '#fca5a5' : avisoEmpresa.estado === 'suspendida' ? '#cbd5e1' : '#fbbf24'
             }}>
-                  {empresaRechazada ? 'Empresa rechazada' : 'Empresa pendiente de validacion'}
+                  {avisoEmpresa.titulo}
                 </p>
                 <p style={{
               margin: 0,
               fontSize: '12px',
-              color: empresaRechazada ? '#fecaca' : '#92400e'
+              color: avisoEmpresa.estado === 'rechazada' ? '#fecaca' : avisoEmpresa.estado === 'suspendida' ? '#cbd5e1' : '#92400e'
             }}>
-                  {empresaRechazada ? 'Corrige y reenvia los datos de tu empresa para que administracion pueda revisarla de nuevo.' : 'Registra y espera que el administrador valide tu empresa para publicar vacantes.'}
+                  {avisoEmpresa.descripcion}
                 </p>
               </div>
             </div>
             <button onClick={() => navigate('/reclutador/empresa')} style={{
-          background: empresaRechazada ? '#ef4444' : '#f59e0b',
+          background: avisoEmpresa.estado === 'rechazada' ? '#ef4444' : avisoEmpresa.estado === 'suspendida' ? '#64748b' : '#f59e0b',
           border: 'none',
           borderRadius: '8px',
           padding: '8px 16px',
-          color: empresaRechazada ? '#fff' : '#1c1917',
+          color: avisoEmpresa.estado === 'pendiente' ? '#1c1917' : '#fff',
           fontSize: '13px',
           fontWeight: 700,
           cursor: 'pointer',
           flexShrink: 0
         }}>
-              {empresaRechazada ? 'Reenviar datos' : 'Ver empresa'}
+              {avisoEmpresa.accion}
             </button>
           </div>}
 
@@ -569,7 +549,9 @@ export default function ReclutadorDashboard() {
                     {l.label}
                   </span>)}
               </div>
-              <ResponsiveContainer width="100%" height={200}>
+              {chartData.length === 0 ? <p style={{ margin: 0, minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textMuted, fontSize: '13px' }}>
+                  Aun no hay actividad en los ultimos siete dias.
+                </p> : <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={chartData} margin={{
                 top: 5,
                 right: 5,
@@ -601,7 +583,7 @@ export default function ReclutadorDashboard() {
                   <Area type="monotone" dataKey="postulaciones" name="Postulaciones" stroke="#7c3aed" strokeWidth={2} fill="url(#gPost)" dot={false} />
                   <Area type="monotone" dataKey="vistas" name="Vistas" stroke="#4f46e5" strokeWidth={2} fill="url(#gVistas)" dot={false} />
                 </AreaChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
           </Card>
 
