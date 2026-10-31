@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PortalLayout from "../../components/Portal/Portallayout";
 import { postulantTheme } from "../../components/Portal/portalTheme";
 import { postulantNav } from "../../components/Portal/Navitems";
@@ -24,6 +25,8 @@ const TAB_LABELS = {
   accesibilidad: "Accesibilidad"
 };
 export default function PerfilPostulante() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     obtenerPerfil,
     actualizarPerfil
@@ -126,7 +129,7 @@ export default function PerfilPostulante() {
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [open]);
-  function abrir() {
+  const abrir = useCallback(() => {
     setSaveError(null);
     setFotoFile(null);
     setFotoPreview(null);
@@ -141,7 +144,15 @@ export default function PerfilPostulante() {
     });
     setTab("info");
     setOpen(true);
-  }
+  }, [perfil]);
+  useEffect(() => {
+    if (loading || error || !location.state?.openEdit) return;
+
+    abrir();
+    const requestedTab = location.state.editTab;
+    if (TABS.includes(requestedTab)) setTab(requestedTab);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [loading, error, location.pathname, location.state, navigate, abrir]);
   function cerrar() {
     if (saving) return;
     setOpen(false);

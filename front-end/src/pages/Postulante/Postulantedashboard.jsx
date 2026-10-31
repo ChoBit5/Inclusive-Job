@@ -5,6 +5,13 @@ import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import { usePostulanteDashboard } from '../../hooks/Postulante/useDomain.js';
+import {
+  accionChecklistPostulante,
+  calcularPerfilDashboard,
+  estadoPostulacionUi,
+  filtrarChecklistPostulante,
+  normalizarVacanteRecomendada,
+} from '../../hooks/Postulante/dashboardHelpers.js';
 function useCountUp(end, duration = 1200) {
   const [v, setV] = useState(0);
   const raf = useRef(null);
@@ -27,28 +34,6 @@ function formatSalario(min, max) {
   if (!min) return `Hasta ${fmt(max)} MXN`;
   return `${fmt(min)} - ${fmt(max)} MXN`;
 }
-const ESTADO_STYLE = {
-  pendiente: {
-    bg: '#fef3c7',
-    text: '#92400e',
-    border: '#fde68a'
-  },
-  entrevista: {
-    bg: '#ede9fe',
-    text: '#5b21b6',
-    border: '#c4b5fd'
-  },
-  aceptado: {
-    bg: '#d1fae5',
-    text: '#065f46',
-    border: '#6ee7b7'
-  },
-  rechazado: {
-    bg: '#fee2e2',
-    text: '#991b1b',
-    border: '#fca5a5'
-  }
-};
 function StatCard({
   label,
   value,
@@ -108,7 +93,7 @@ function StatCard({
 function Badge({
   estado
 }) {
-  const s = ESTADO_STYLE[estado] || ESTADO_STYLE.pendiente;
+  const s = estadoPostulacionUi(estado);
   return <span style={{
     display: 'inline-flex',
     alignItems: 'center',
@@ -120,7 +105,7 @@ function Badge({
     color: s.text,
     border: `1px solid ${s.border}`
   }}>
-      {estado}
+      {s.label}
     </span>;
 }
 function Card({
@@ -207,10 +192,13 @@ export default function PostulanteDashboard() {
     refetch
   } = usePostulanteDashboard();
   const dashboardUser = data?.user ?? {};
-  const perfilCompletado = Number(data?.perfil?.completado ?? 0);
-  const checklist = data?.perfil?.checklist ?? [];
+  const perfil = data
+    ? calcularPerfilDashboard(data.perfil)
+    : { completado: 0, checklist: [], pasosPendientes: 0 };
+  const perfilCompletado = perfil.completado;
+  const checklist = filtrarChecklistPostulante(perfil.checklist);
   const postulacionesRecientes = data?.postulaciones_recientes ?? [];
-  const vacantesRecomendadas = data?.vacantes_recomendadas ?? [];
+  const vacantesRecomendadas = (data?.vacantes_recomendadas ?? []).map(normalizarVacanteRecomendada);
   const stats = [{
     label: 'Postulaciones',
     value: Number(data?.stats?.postulaciones ?? 0),
@@ -233,7 +221,7 @@ export default function PostulanteDashboard() {
     color: '#0ea5e9'
   }];
   const perfilCompleto = perfilCompletado >= 100;
-  const pasosPendientes = checklist.filter(c => !c.done).length;
+  const pasosPendientes = checklist.filter(item => !item.done).length;
   const firstName = (dashboardUser.nombre || 'Postulante').split(' ')[0];
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
@@ -553,7 +541,10 @@ export default function PostulanteDashboard() {
               flexDirection: 'column',
               gap: '6px'
             }}>
-                {checklist.map(item => <li key={item.id} onClick={() => !item.done && navigate(item.path)} style={{
+                {checklist.map(item => {
+                const action = accionChecklistPostulante(item);
+                const clickable = Boolean(action);
+                return <li key={item.id} onClick={() => clickable && navigate(action.path, action.state ? { state: action.state } : undefined)} style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -561,15 +552,15 @@ export default function PostulanteDashboard() {
                 borderRadius: '10px',
                 border: `1px solid ${item.done ? 'rgba(5,150,105,0.2)' : t.border}`,
                 background: item.done ? 'rgba(5,150,105,0.04)' : t.bgElevated,
-                cursor: item.done ? 'default' : 'pointer',
+                cursor: clickable ? 'pointer' : 'default',
                 transition: 'border-color 0.15s, background 0.15s'
               }} onMouseEnter={e => {
-                if (!item.done) {
+                if (clickable) {
                   e.currentTarget.style.borderColor = t.accentBorder;
                   e.currentTarget.style.background = t.accentSoft;
                 }
               }} onMouseLeave={e => {
-                if (!item.done) {
+                if (clickable) {
                   e.currentTarget.style.borderColor = t.border;
                   e.currentTarget.style.background = t.bgElevated;
                 }
@@ -621,11 +612,12 @@ export default function PostulanteDashboard() {
                     </span>
 
                     
-                    {!item.done && <ChevronRight size={14} style={{
+                  {clickable && <ChevronRight size={14} style={{
                   color: t.accent,
                   flexShrink: 0
                 }} />}
-                  </li>)}
+                  </li>;
+                })}
               </ul>
 
             </div>

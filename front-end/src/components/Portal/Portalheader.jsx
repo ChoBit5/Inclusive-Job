@@ -69,7 +69,7 @@ export default function PortalHeader({
           {actions}
         </div>}
 
-      <div role="status" aria-live="polite" aria-label={`${notifications} reportes activos`} style={{
+      <div role="status" aria-live="polite" aria-label={`${notifications} notificaciones`} style={{
       minWidth: '32px',
       height: '32px',
       padding: '0 8px',
