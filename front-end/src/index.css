@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+.swal2-container { z-index: 1000000 !important; }
+
 @layer base {
   :root {
     color: #0f172a;

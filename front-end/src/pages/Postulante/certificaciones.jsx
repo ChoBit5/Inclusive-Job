@@ -6,7 +6,8 @@ import { postulantNav } from '../../components/Portal/Navitems';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 import { useAnalisisCvIA, useDocumentosPostulante, usePostulanteChatHistorial } from '../../hooks/Postulante/useDomain.js';
 import { validateCvFile } from '../../hooks/Postulante/cvHelpers.js';
-import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { validateCertificationForm } from '../../hooks/Postulante/certificacionHelpers.js';
+import { confirmAction, confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',
   rol: 'Postulante',
@@ -372,15 +373,22 @@ export default function PostulanteDashboard() {
   }
   async function recargarCertificaciones() {
     const data = await listarCertificaciones();
-    setCertificaciones(data.ok ? data.certificaciones : []);
+    if (data.ok) {
+      setCertificaciones(data.certificaciones);
+      setCertificacionesError('');
+      return true;
+    }
+    setCertificaciones([]);
+    setCertificacionesError(data.msg ?? 'No se pudieron cargar las certificaciones.');
+    return false;
   }
   async function guardarCertificacion() {
-    if (!formCert.nombre.trim() || !formCert.institucion.trim() || !formCert.fecha) {
-      alert('Completa todos los campos');
-      return;
-    }
-    if (!editandoCert && !formCert.pdf) {
-      alert('Selecciona un PDF');
+    const validationError = validateCertificationForm({
+      ...formCert,
+      editing: Boolean(editandoCert),
+    });
+    if (validationError) {
+      await errorAlert('Datos incompletos', validationError, t);
       return;
     }
     try {
@@ -405,6 +413,25 @@ export default function PostulanteDashboard() {
     } finally {
       setGuardandoCert(false);
     }
+  }
+  async function confirmarGuardarCertificacion() {
+    const validationError = validateCertificationForm({
+      ...formCert,
+      editing: Boolean(editandoCert),
+    });
+    if (validationError) {
+      await errorAlert('Datos incompletos', validationError, t);
+      return;
+    }
+    const confirmado = await confirmAction({
+      title: editandoCert ? '¿Guardar cambios?' : '¿Crear certificación?',
+      html: editandoCert ? 'Se actualizará la certificación.' : 'Se registrará la nueva certificación.',
+      confirmText: editandoCert ? 'Guardar' : 'Crear',
+      cancelText: 'Cancelar',
+      icon: 'question',
+      theme: t,
+    });
+    if (confirmado) await guardarCertificacion();
   }
   async function eliminarCertificacion(id) {
     const confirmado = await confirmDelete('', t);
@@ -1256,7 +1283,7 @@ export default function PostulanteDashboard() {
           }}>
                 Cancelar
               </button>
-              <button type="button" disabled={guardandoCert} onClick={guardarCertificacion} style={{
+              <button type="button" disabled={guardandoCert} onClick={confirmarGuardarCertificacion} style={{
             height: '46px',
             padding: '0 20px',
             border: 'none',
