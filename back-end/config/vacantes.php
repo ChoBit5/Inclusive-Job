@@ -34,3 +34,9 @@ function inclusijob_vacante_compatible_sql(string $vacanteAlias = 'v', string $p
           AND {$pd}.id_postulante = ?
     )";
 }
+
+function inclusijob_postulacion_visible_sql(string $empresaAlias = 'e'): string
+{
+    $e = inclusijob_vacantes_alias($empresaAlias);
+    return "{$e}.estado_validacion = 1";
+}

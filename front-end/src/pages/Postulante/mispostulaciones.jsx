@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import { usePostulacionesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
+import {
+  filtrarPostulaciones,
+  formatFecha,
+  formatSalario,
+  getEstadoPostulacion,
+  getPostulacionesErrorMessage,
+} from '../../hooks/Postulante/postulacionesHelpers.js';
 const MOCK_USER = {
   nombre: 'Luis',
   rol: 'Postulante'
@@ -29,20 +36,11 @@ const ESTADO_STYLE = {
     dot: '#dc2626'
   }
 };
-function formatFecha(iso) {
-  if (!iso) return '—';
-  const [y, m, d] = iso.split('-');
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${parseInt(d)} ${meses[parseInt(m) - 1]} ${y}`;
-}
-function formatSalario(min, max) {
-  const fmt = n => `$${Number(n).toLocaleString('es-MX')}`;
-  return `${fmt(min)} – ${fmt(max)} MXN`;
-}
 function Badge({
   estado
 }) {
-  const s = ESTADO_STYLE[estado?.toLowerCase()] || ESTADO_STYLE.revisando;
+  const estadoInfo = getEstadoPostulacion(estado);
+  const s = ESTADO_STYLE[estadoInfo.style];
   return <span style={{
     padding: '7px 14px',
     borderRadius: '999px',
@@ -52,7 +50,7 @@ function Badge({
     fontSize: '12px',
     fontWeight: 700
   }}>
-      {estado}
+      {estadoInfo.label}
     </span>;
 }
 function Card({
@@ -88,7 +86,8 @@ function SectionHead({
 function ModalPostulacion({
   postulacion,
   onClose,
-  onDespostular
+  onDespostular,
+  retirando = false,
 }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -97,8 +96,8 @@ function ModalPostulacion({
     };
   }, []);
   if (!postulacion) return null;
-  const estadoKey = postulacion.estado?.toLowerCase() || 'revisando';
-  const s = ESTADO_STYLE[estadoKey] || ESTADO_STYLE.revisando;
+  const estadoInfo = getEstadoPostulacion(postulacion.estado);
+  const s = ESTADO_STYLE[estadoInfo.style];
   return <div onClick={onClose} style={{
     position: 'fixed',
     inset: 0,
@@ -284,7 +283,9 @@ function ModalPostulacion({
               fontWeight: 500,
               color: '#1e40af'
             }}>
-                {postulacion.salario_min && postulacion.salario_max ? formatSalario(postulacion.salario_min, postulacion.salario_max) : '—'}
+                {postulacion.salario_min != null || postulacion.salario_max != null
+                  ? formatSalario(postulacion.salario_min, postulacion.salario_max)
+                  : '—'}
               </p>
             </div>
             <span style={{
@@ -305,7 +306,7 @@ function ModalPostulacion({
               borderRadius: '50%',
               background: s.dot
             }} />
-              {postulacion.estado}
+              {estadoInfo.label}
             </span>
           </div>
 
@@ -479,7 +480,7 @@ function ModalPostulacion({
         flexShrink: 0,
         background: '#fff'
       }}>
-          <button onClick={() => onDespostular(postulacion.id)} style={{
+          <button onClick={() => onDespostular(postulacion.id)} disabled={retirando} style={{
           background: '#fff5f5',
           color: '#dc2626',
           border: '1px solid #fecaca',
@@ -487,13 +488,14 @@ function ModalPostulacion({
           padding: '10px 18px',
           fontSize: '13px',
           fontWeight: 600,
-          cursor: 'pointer',
+          cursor: retirando ? 'wait' : 'pointer',
+          opacity: retirando ? 0.65 : 1,
           display: 'flex',
           alignItems: 'center',
           gap: '6px'
         }}>
             <X size={14} />
-            Despostularme
+            {retirando ? 'Retirando...' : 'Despostularme'}
           </button>
         </div>
       </div>
@@ -506,48 +508,53 @@ export default function PostulanteDashboard() {
   } = usePostulacionesPostulante();
   const [postulaciones, setPostulaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [postulacionSeleccionada, setPostulacionSeleccionada] = useState(null);
-  useEffect(() => {
-    cargarPostulaciones();
-  }, []);
-  async function cargarPostulaciones() {
+  const [retirandoId, setRetirandoId] = useState(null);
+  const cargarPostulaciones = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await listarPostulaciones();
-      if (data.ok) {
-        setPostulaciones(data.data);
+      if (data.httpOk === false || data.ok === false) {
+        setError(getPostulacionesErrorMessage(data));
+        return;
       }
-    } catch (error) {
-      console.log(error);
+      setPostulaciones(Array.isArray(data.data) ? data.data : []);
+    } catch {
+      setError('No se pudieron cargar tus postulaciones. Verifica tu conexión.');
     } finally {
       setLoading(false);
     }
-  }
+  }, [listarPostulaciones]);
+  useEffect(() => {
+    cargarPostulaciones();
+  }, [cargarPostulaciones]);
   async function despostular(id) {
     const confirmado = await confirmDelete('', t);
     if (!confirmado) return;
+    setRetirandoId(id);
     try {
       const data = await despostularApi(id);
-      if (!data.ok) {
-        await errorAlert('No se pudo despostular', data.msg || 'Ocurrió un error al procesar la solicitud.', t);
+      if (data.httpOk === false || !data.ok) {
+        await errorAlert('No se pudo despostular', data.msg || data.message || 'Ocurrió un error al procesar la solicitud.', t);
         return;
       }
       setPostulaciones(prev => prev.filter(p => p.id !== id));
       setPostulacionSeleccionada(null);
       await successAlert('Postulación cancelada', 'Te despostulaste correctamente de esta vacante.', t);
-    } catch (error) {
-      console.log(error);
+    } catch {
       await errorAlert('Error de conexión', 'No se pudo conectar con el servidor.', t);
+    } finally {
+      setRetirandoId(null);
     }
   }
-  const postulacionesFiltradas = postulaciones.filter(p => {
-    const texto = `${p.vacante || ''} ${p.modalidad || ''} ${p.estado || ''} ${p.fecha || ''}`.toLowerCase();
-    return texto.includes(busqueda.toLowerCase());
-  });
+  const postulacionesFiltradas = filtrarPostulaciones(postulaciones, busqueda);
   return <PortalLayout theme={t} navItems={postulantNav} user={MOCK_USER} pageTitle="Mis postulaciones">
 
       
-      {postulacionSeleccionada && <ModalPostulacion postulacion={postulacionSeleccionada} onClose={() => setPostulacionSeleccionada(null)} onDespostular={despostular} />}
+      {postulacionSeleccionada && <ModalPostulacion postulacion={postulacionSeleccionada} onClose={() => setPostulacionSeleccionada(null)} onDespostular={despostular} retirando={retirandoId === postulacionSeleccionada.id} />}
 
       <div style={{
       maxWidth: '1400px',
@@ -603,7 +610,22 @@ export default function PostulanteDashboard() {
 
           {loading ? <div style={{
           padding: '30px'
-        }}>Cargando postulaciones...</div> : postulacionesFiltradas.length === 0 ? <div style={{
+        }}>Cargando postulaciones...</div> : error ? <div role="alert" style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#b91c1c'
+        }}>
+              <p style={{ margin: '0 0 14px' }}>{error}</p>
+              <button type="button" onClick={cargarPostulaciones} style={{
+                border: `1px solid ${t.accentBorder}`,
+                background: t.accentSoft,
+                color: t.accent,
+                borderRadius: '10px',
+                padding: '9px 14px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}>Reintentar</button>
+            </div> : postulacionesFiltradas.length === 0 ? <div style={{
           padding: '40px',
           textAlign: 'center',
           color: t.textMuted
@@ -667,11 +689,7 @@ export default function PostulanteDashboard() {
                   padding: '22px',
                   whiteSpace: 'nowrap'
                 }}>
-                        {new Date(p.fecha).toLocaleDateString('es-MX', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+                        {formatFecha(p.fecha)}
                       </td>
                       <td style={{
                   padding: '22px'

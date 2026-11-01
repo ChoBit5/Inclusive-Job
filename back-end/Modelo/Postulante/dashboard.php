@@ -116,14 +116,21 @@ try {
         }
     }
 
+    $postulacionesJoinSql = "
+        FROM postulaciones p
+        INNER JOIN vacantes v ON v.id_vacante = p.id_vacante
+        INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
+        INNER JOIN empresas e ON e.id_empresas = r.id_empresas
+    ";
+    $postulacionVisibleSql = inclusijob_postulacion_visible_sql('e');
     $totalPostulaciones = $idPostulante > 0
-        ? postulante_dashboard_scalar($con, 'SELECT COUNT(*) AS total FROM postulaciones WHERE id_postulante = ?', 'i', [$idPostulante])
+        ? postulante_dashboard_scalar($con, "SELECT COUNT(*) AS total {$postulacionesJoinSql} WHERE p.id_postulante = ? AND {$postulacionVisibleSql}", 'i', [$idPostulante])
         : 0;
     $enProceso = $idPostulante > 0
-        ? postulante_dashboard_scalar($con, "SELECT COUNT(*) AS total FROM postulaciones WHERE id_postulante = ? AND LOWER(estado) IN ('pendiente', 'en proceso', 'entrevista')", 'i', [$idPostulante])
+        ? postulante_dashboard_scalar($con, "SELECT COUNT(*) AS total {$postulacionesJoinSql} WHERE p.id_postulante = ? AND {$postulacionVisibleSql} AND LOWER(p.estado) IN ('pendiente', 'en proceso', 'entrevista')", 'i', [$idPostulante])
         : 0;
     $aceptadas = $idPostulante > 0
-        ? postulante_dashboard_scalar($con, "SELECT COUNT(*) AS total FROM postulaciones WHERE id_postulante = ? AND LOWER(estado) IN ('aceptado', 'aceptada', 'contratado', 'contratada')", 'i', [$idPostulante])
+        ? postulante_dashboard_scalar($con, "SELECT COUNT(*) AS total {$postulacionesJoinSql} WHERE p.id_postulante = ? AND {$postulacionVisibleSql} AND LOWER(p.estado) IN ('aceptado', 'aceptada', 'contratado', 'contratada')", 'i', [$idPostulante])
         : 0;
 
     $vacantesCompatibles = [];
@@ -203,12 +210,9 @@ try {
                 v.titulo_puesto AS vacante,
                 v.modalidad,
                 COALESCE(e.nombre_empresas, 'Empresa') AS empresa
-             FROM postulaciones p
-             INNER JOIN vacantes v ON v.id_vacante = p.id_vacante
-             INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
-             INNER JOIN empresas e ON e.id_empresas = r.id_empresas
+             {$postulacionesJoinSql}
              WHERE p.id_postulante = ?
-               AND COALESCE(e.estado_validacion, 0) = 1
+               AND {$postulacionVisibleSql}
              ORDER BY p.fecha_postulacion DESC
              LIMIT 3",
             'i',
