@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef, useId } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Accessibility, MapPin, Briefcase, ChevronRight, ArrowRight, CheckCircle, Clock, Sparkles, X, Calendar, AlertTriangle, Building2, Mail, Phone, Globe } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
@@ -9,9 +9,13 @@ import { resolveAssetUrl as backendAssetUrl } from '../../hooks/Sesion/apiSesion
 import {
   filtrarYOrdenarVacantes,
   formatSalario,
+  getContactHref,
+  getSafeExternalUrl,
   getVacantesEmptyMessage,
   getVacantesErrorMessage,
   modalidadMatches,
+  normalizeRequisitos,
+  resolveVacanteFromQuery,
 } from '../../hooks/Postulante/vacantesHelpers.js';
 function formatFecha(iso) {
   if (!iso) return '—';
@@ -140,7 +144,7 @@ function ModalReporte({
         onReportado(vacante.id_vacante);
         onClose();
       } else {
-        setError(json.msg ?? 'No se pudo enviar el reporte.');
+        setError(json.message ?? json.msg ?? 'No se pudo enviar el reporte.');
       }
     } catch {
       setError('Error de conexión.');
@@ -405,20 +409,59 @@ function ModalVacante({
   const {
     postularse
   } = useVacantesPostulante();
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement;
+    const focusTimer = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll(
+        'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
     document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.body.style.overflow = '';
+      window.cancelAnimationFrame(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
     };
   }, []);
+  const closeModal = useCallback(() => onCloseRef.current?.(), []);
   const [toast, setToast] = useState(null);
   const [fotoReclutadorError, setFotoReclutadorError] = useState(false);
   useEffect(() => {
     setFotoReclutadorError(false);
   }, [vacante?.id_vacante]);
   if (!vacante) return null;
-  const mostrarToast = tipo => {
-    setToast(tipo);
+  const mostrarToast = (tipo, mensaje = '') => {
+    setToast({ tipo, mensaje });
     setTimeout(() => setToast(null), 3200);
   };
   const handlePostularse = async () => {
@@ -428,10 +471,10 @@ function ModalVacante({
         onPostularse(vacante.id_vacante);
         mostrarToast('postulado');
       } else {
-        mostrarToast('error');
+        mostrarToast('error', json.message ?? json.msg ?? 'No se pudo enviar la postulación.');
       }
     } catch {
-      mostrarToast('error');
+      mostrarToast('error', 'No se pudo enviar la postulación. Verifica tu conexión.');
     }
   };
   const reclutador = vacante.reclutador ?? {};
@@ -445,7 +488,13 @@ function ModalVacante({
   const empresaTelefono = empresa.telefono || vacante.telefono_empresa || '';
   const empresaCorreo = empresa.correo || vacante.correo_empresa || '';
   const empresaSitio = empresa.sitio_web || vacante.empresa_sitio_web || '';
-  return <div onClick={onClose} style={{
+  const safeEmpresaSitio = getSafeExternalUrl(empresaSitio);
+  const reclutadorCorreoHref = getContactHref('email', reclutador.correo);
+  const reclutadorTelefonoHref = getContactHref('tel', reclutador.telefono);
+  const empresaCorreoHref = getContactHref('email', empresaCorreo);
+  const empresaTelefonoHref = getContactHref('tel', empresaTelefono);
+  const requisitos = normalizeRequisitos(vacante.requisitos);
+  return <div onClick={closeModal} style={{
     position: 'fixed',
     inset: 0,
     background: 'rgba(15,23,41,0.45)',
@@ -455,7 +504,14 @@ function ModalVacante({
     justifyContent: 'center',
     padding: '20px'
   }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+      onClick={e => e.stopPropagation()}
+      style={{
       background: '#fff',
       borderRadius: '20px',
       position: 'relative',
@@ -503,7 +559,7 @@ function ModalVacante({
               <div style={{
               flex: 1
             }}>
-                <h2 style={{
+                <h2 id={titleId} style={{
                 margin: '0 0 4px',
                 fontSize: '20px',
                 fontWeight: 800,
@@ -527,7 +583,7 @@ function ModalVacante({
               </div>
             </div>
 
-            <button onClick={onClose} style={{
+            <button ref={closeButtonRef} onClick={closeModal} aria-label="Cerrar detalle de vacante" style={{
             width: '32px',
             height: '32px',
             borderRadius: '8px',
@@ -851,25 +907,27 @@ function ModalVacante({
                   flexDirection: 'column',
                   gap: '4px'
                 }}>
-                    {reclutador.correo && <span style={{
+                    {reclutador.correo && <a href={reclutadorCorreoHref} style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '12px',
                     color: '#475569',
-                    wordBreak: 'break-word'
+                    wordBreak: 'break-word',
+                    textDecoration: 'none',
                   }}>
                         <Mail size={12} /> {reclutador.correo}
-                      </span>}
-                    {reclutador.telefono && <span style={{
+                      </a>}
+                    {reclutador.telefono && <a href={reclutadorTelefonoHref} style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '12px',
-                    color: '#475569'
+                    color: '#475569',
+                    textDecoration: 'none',
                   }}>
                         <Phone size={12} /> {reclutador.telefono}
-                      </span>}
+                      </a>}
                   </div>
                 </div>
               </div>
@@ -926,26 +984,28 @@ function ModalVacante({
                     marginTop: '2px'
                   }} /> {empresaDireccion}
                     </span>}
-                  {empresaTelefono && <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  color: '#166534'
-                }}>
-                      <Phone size={12} /> {empresaTelefono}
-                    </span>}
-                  {empresaCorreo && <span style={{
+                  {empresaTelefono && <a href={empresaTelefonoHref} style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '12px',
                   color: '#166534',
-                  wordBreak: 'break-word'
+                  textDecoration: 'none',
+                }}>
+                      <Phone size={12} /> {empresaTelefono}
+                    </a>}
+                  {empresaCorreo && <a href={empresaCorreoHref} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  color: '#166534',
+                  wordBreak: 'break-word',
+                  textDecoration: 'none',
                 }}>
                       <Mail size={12} /> {empresaCorreo}
-                    </span>}
-                  {empresaSitio && <a href={empresaSitio} target="_blank" rel="noreferrer" style={{
+                    </a>}
+                  {empresaSitio && (safeEmpresaSitio ? <a href={safeEmpresaSitio} target="_blank" rel="noopener noreferrer" style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -956,7 +1016,16 @@ function ModalVacante({
                   wordBreak: 'break-word'
                 }}>
                       <Globe size={12} /> {empresaSitio}
-                    </a>}
+                    </a> : <span style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      color: '#166534',
+                      wordBreak: 'break-word',
+                    }}>
+                      <Globe size={12} /> {empresaSitio}
+                    </span>)}
                 </div>
               </div>
             </div>
@@ -982,14 +1051,15 @@ function ModalVacante({
             margin: 0,
             fontSize: '13px',
             color: '#374151',
-            lineHeight: 1.6
+            lineHeight: 1.6,
+            whiteSpace: 'pre-line',
           }}>
                 {vacante.descripcion_puesto}
               </p>
             </div>}
 
           
-          {vacante.requisitos?.length > 0 && <div style={{
+          {requisitos.length > 0 && <div style={{
           marginBottom: '20px'
         }}>
               <p style={{
@@ -1012,7 +1082,7 @@ function ModalVacante({
             flexDirection: 'column',
             gap: '6px'
           }}>
-                {(Array.isArray(vacante.requisitos) ? vacante.requisitos : vacante.requisitos.split('\n').filter(Boolean)).map((req, i) => <li key={i} style={{
+                {requisitos.map((req, i) => <li key={i} style={{
               display: 'flex',
               alignItems: 'flex-start',
               gap: '8px',
@@ -1210,13 +1280,13 @@ function ModalVacante({
           width: '36px',
           height: '36px',
           borderRadius: '50%',
-          background: toast === 'reportado' ? '#fee2e2' : '#d1fae5',
+          background: toast.tipo === 'error' || toast.tipo === 'reportado' ? '#fee2e2' : '#d1fae5',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0
         }}>
-              {toast === 'reportado' ? <AlertTriangle size={18} color="#dc2626" /> : <CheckCircle size={18} color="#059669" />}
+              {toast.tipo === 'error' || toast.tipo === 'reportado' ? <AlertTriangle size={18} color="#dc2626" /> : <CheckCircle size={18} color="#059669" />}
             </div>
             <div>
               <p style={{
@@ -1225,14 +1295,14 @@ function ModalVacante({
             fontWeight: 700,
             color: '#111827'
           }}>
-                {toast === 'reportado' ? '¡Reporte enviado!' : '¡Postulación enviada!'}
+                {toast.tipo === 'error' ? 'No se pudo completar la acción' : toast.tipo === 'reportado' ? '¡Reporte enviado!' : '¡Postulación enviada!'}
               </p>
               <p style={{
             margin: '2px 0 0',
             fontSize: '12px',
             color: '#6b7280'
           }}>
-                {toast === 'reportado' ? 'Revisaremos esta vacante a la brevedad' : 'La empresa recibirá tu perfil pronto'}
+                {toast.mensaje || (toast.tipo === 'reportado' ? 'Revisaremos esta vacante a la brevedad' : 'La empresa recibirá tu perfil pronto')}
               </p>
             </div>
           </div>}
@@ -1354,35 +1424,45 @@ export default function Vacantes() {
   const recomendacionesMap = useMemo(() => {
     return new Map(recomendacionesIA.map(item => [Number(item.id_vacante), item]));
   }, [recomendacionesIA]);
+  const limpiarQueryVacante = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    if (!params.has('vacante')) return;
+    params.delete('vacante');
+    const search = params.toString();
+    navigate(`${location.pathname}${search ? `?${search}` : ''}`, {
+      replace: true,
+      state: location.state,
+    });
+  }, [location.pathname, location.search, location.state, navigate]);
+  const cerrarVacante = useCallback(() => {
+    setVacanteSeleccionada(null);
+    limpiarQueryVacante();
+  }, [limpiarQueryVacante]);
   useEffect(() => {
     openedVacanteFromQueryRef.current = null;
   }, [location.search]);
   useEffect(() => {
-    if (cargando) return;
-    const idVacante = Number(new URLSearchParams(location.search).get('vacante'));
-    if (!idVacante || openedVacanteFromQueryRef.current === idVacante) return;
-    const base = vacantes.find(v => Number(v.id_vacante) === idVacante);
-    const stateRecommendation = location.state?.recomendacionIA;
-    const recomendacionDesdeState = Number(stateRecommendation?.id_vacante ?? stateRecommendation?.vacante?.id_vacante) === idVacante ? stateRecommendation : null;
-    const recomendacion = recomendacionesMap.get(idVacante) ?? recomendacionDesdeState;
-    const desdeIA = recomendacion?.vacante ?? {};
-    if (!base && !Object.keys(desdeIA).length) {
-      openedVacanteFromQueryRef.current = idVacante;
-      setError('No se pudo abrir la vacante solicitada. Puede que ya no este visible o no sea compatible con tu perfil.');
+    const resolved = resolveVacanteFromQuery({
+      search: location.search,
+      cargando,
+      vacantes,
+      recomendacionesMap,
+      stateRecommendation: location.state?.recomendacionIA,
+    });
+    if (resolved.status === 'loading' || resolved.status === 'none') return;
+    if (openedVacanteFromQueryRef.current === resolved.idVacante) return;
+    if (resolved.status === 'missing') {
+      openedVacanteFromQueryRef.current = resolved.idVacante;
+      setError('Esta vacante ya no está disponible.');
+      limpiarQueryVacante();
       return;
     }
-    const vacanteParaAbrir = {
-      ...desdeIA,
-      ...base,
-      empresa: desdeIA.empresa ?? base?.empresa,
-      recomendacion_ia: recomendacion ?? undefined
-    };
-    openedVacanteFromQueryRef.current = idVacante;
+    openedVacanteFromQueryRef.current = resolved.idVacante;
     const timer = window.setTimeout(() => {
-      setVacanteSeleccionada(vacanteParaAbrir);
+      setVacanteSeleccionada(resolved.vacante);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [cargando, location.search, location.state, recomendacionesMap, vacantes]);
+  }, [cargando, limpiarQueryVacante, location.search, location.state, recomendacionesMap, vacantes]);
   if (cargando) {
     return <PortalLayout theme={t} navItems={postulantNav} user={{
       nombre: '',
@@ -1459,7 +1539,7 @@ export default function Vacantes() {
         }
       `}</style>
 
-      {vacanteSeleccionada && <ModalVacante vacante={vacanteSeleccionada} onClose={() => setVacanteSeleccionada(null)} onAbrirReporte={v => setVacanteParaReportar(v)} onPostularse={marcarPostulada} />}
+      {vacanteSeleccionada && <ModalVacante vacante={vacanteSeleccionada} onClose={cerrarVacante} onAbrirReporte={v => setVacanteParaReportar(v)} onPostularse={marcarPostulada} />}
       {vacanteParaReportar && <ModalReporte vacante={vacanteParaReportar} onClose={() => setVacanteParaReportar(null)} onReportado={marcarReportada} />}
 
       <div style={{
@@ -1833,7 +1913,19 @@ export default function Vacantes() {
               boxShadow: recomendacionIA ? 'inset 0 0 0 2px rgba(37,99,235,0.14), 0 8px 24px rgba(124,58,237,0.08)' : 'none',
               cursor: 'pointer',
               transition: 'background 0.15s'
-            }} onMouseEnter={e => e.currentTarget.style.background = t.bgElevated} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} onClick={() => recomendacionIA ? abrirVacanteRecomendada(recomendacionIA) : setVacanteSeleccionada(v)}>
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Ver detalle de ${v.titulo_puesto}`}
+            onMouseEnter={e => e.currentTarget.style.background = t.bgElevated}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            onClick={() => recomendacionIA ? abrirVacanteRecomendada(recomendacionIA) : setVacanteSeleccionada(v)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                recomendacionIA ? abrirVacanteRecomendada(recomendacionIA) : setVacanteSeleccionada(v);
+              }
+            }}>
                   <div style={{
                 display: 'flex',
                 alignItems: 'center',
