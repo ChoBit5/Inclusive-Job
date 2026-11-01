@@ -113,7 +113,7 @@ function FilterButton({
       {children}
     </button>;
 }
-function ModalReporte({
+export function ModalReporte({
   vacante,
   onClose,
   onReportado
@@ -400,7 +400,7 @@ function ModalReporte({
       </div>
     </div>;
 }
-function ModalVacante({
+export function ModalVacante({
   vacante,
   onClose,
   onAbrirReporte,

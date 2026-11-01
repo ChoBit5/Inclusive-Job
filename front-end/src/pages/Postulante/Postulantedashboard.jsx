@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, BookmarkCheck, Award, Accessibility, Clock, CheckCircle, ArrowRight, Sparkles, MapPin, Briefcase, ChevronRight, FileText, Bell } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
@@ -8,10 +8,13 @@ import { usePostulanteDashboard } from '../../hooks/Postulante/useDomain.js';
 import {
   accionChecklistPostulante,
   calcularPerfilDashboard,
+  enriquecerVacanteRecomendada,
   estadoPostulacionUi,
   filtrarChecklistPostulante,
   normalizarVacanteRecomendada,
 } from '../../hooks/Postulante/dashboardHelpers.js';
+import { ModalReporte, ModalVacante } from './vacantes.jsx';
+import { useVacantesPostulante } from '../../hooks/Postulante/useDomain.js';
 function useCountUp(end, duration = 1200) {
   const [v, setV] = useState(0);
   const raf = useRef(null);
@@ -191,6 +194,10 @@ export default function PostulanteDashboard() {
     error,
     refetch
   } = usePostulanteDashboard();
+  const { listarVacantes } = useVacantesPostulante();
+  const [detalleVacantes, setDetalleVacantes] = useState([]);
+  const [vacanteSeleccionada, setVacanteSeleccionada] = useState(null);
+  const [vacanteParaReportar, setVacanteParaReportar] = useState(null);
   const dashboardUser = data?.user ?? {};
   const perfil = data
     ? calcularPerfilDashboard(data.perfil)
@@ -198,7 +205,28 @@ export default function PostulanteDashboard() {
   const perfilCompletado = perfil.completado;
   const checklist = filtrarChecklistPostulante(perfil.checklist);
   const postulacionesRecientes = data?.postulaciones_recientes ?? [];
+  const recomendacionesCount = data?.vacantes_recomendadas?.length ?? 0;
   const vacantesRecomendadas = (data?.vacantes_recomendadas ?? []).map(normalizarVacanteRecomendada);
+  useEffect(() => {
+    if (!recomendacionesCount) return undefined;
+    let activo = true;
+    listarVacantes()
+      .then(json => {
+        if (activo && json?.auth) setDetalleVacantes(json.vacantes ?? []);
+      })
+      .catch(() => {});
+    return () => { activo = false; };
+  }, [listarVacantes, recomendacionesCount]);
+  const abrirVacanteRecomendada = useCallback(vacante => {
+    setVacanteSeleccionada(enriquecerVacanteRecomendada(vacante, detalleVacantes));
+  }, [detalleVacantes]);
+  const marcarPostulada = useCallback(idVacante => {
+    setVacanteSeleccionada(prev => prev?.id_vacante === idVacante ? { ...prev, postulada: true } : prev);
+  }, []);
+  const marcarReportada = useCallback(idVacante => {
+    setVacanteSeleccionada(prev => prev?.id_vacante === idVacante ? { ...prev, reportada: true } : prev);
+    setVacanteParaReportar(null);
+  }, []);
   const stats = [{
     label: 'Postulaciones',
     value: Number(data?.stats?.postulaciones ?? 0),
@@ -251,6 +279,18 @@ export default function PostulanteDashboard() {
           position:absolute; border-radius:50%; filter:blur(60px); pointer-events:none; animation:floatBlob 10s ease-in-out infinite;
         }
       `}</style>
+
+      {vacanteSeleccionada && <ModalVacante
+        vacante={vacanteSeleccionada}
+        onClose={() => setVacanteSeleccionada(null)}
+        onAbrirReporte={vacante => setVacanteParaReportar(vacante)}
+        onPostularse={marcarPostulada}
+      />}
+      {vacanteParaReportar && <ModalReporte
+        vacante={vacanteParaReportar}
+        onClose={() => setVacanteParaReportar(null)}
+        onReportado={marcarReportada}
+      />}
 
       <div style={{
       display: 'flex',
@@ -717,7 +757,19 @@ export default function PostulanteDashboard() {
             borderBottom: 'none',
             cursor: 'pointer',
             transition: 'background 0.15s'
-          }} onMouseEnter={e => e.currentTarget.style.background = t.bgElevated} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} onClick={() => navigate('/postulante/vacantes')}>
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Ver detalle de ${v.titulo}`}
+          onMouseEnter={e => e.currentTarget.style.background = t.bgElevated}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          onClick={() => abrirVacanteRecomendada(v)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              abrirVacanteRecomendada(v);
+            }
+          }}>
                 
                 <div style={{
               display: 'flex',

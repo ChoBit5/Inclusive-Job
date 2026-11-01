@@ -84,3 +84,16 @@ export function normalizarVacanteRecomendada(vacante = {}) {
     discapacidades: Array.isArray(vacante.discapacidades) ? vacante.discapacidades : [],
   };
 }
+
+export function enriquecerVacanteRecomendada(vacante = {}, detalleVacantes = []) {
+  const idVacante = Number(vacante.id_vacante ?? vacante.id) || 0;
+  const detalle = (Array.isArray(detalleVacantes) ? detalleVacantes : [])
+    .find(item => Number(item?.id_vacante) === idVacante);
+
+  return {
+    ...vacante,
+    ...(detalle ?? {}),
+    id: idVacante,
+    id_vacante: idVacante,
+  };
+}
