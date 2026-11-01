@@ -281,7 +281,8 @@ ALTER TABLE `empresas`
 ALTER TABLE `postulaciones`
   ADD PRIMARY KEY (`id_postulacion`),
   ADD KEY `fk_postulacion_postulante` (`id_postulante`),
-  ADD KEY `fk_postulacion_vacante` (`id_vacante`);
+  ADD KEY `fk_postulacion_vacante` (`id_vacante`),
+  ADD UNIQUE KEY `uq_postulacion_postulante_vacante` (`id_postulante`,`id_vacante`);
 
 --
 -- Indices de la tabla `postulantes`

@@ -15,6 +15,7 @@ import {
   getVacantesErrorMessage,
   modalidadMatches,
   normalizeRequisitos,
+  resolvePostulacionState,
   resolveVacanteFromQuery,
 } from '../../hooks/Postulante/vacantesHelpers.js';
 function formatFecha(iso) {
@@ -455,6 +456,7 @@ export function ModalVacante({
   }, []);
   const closeModal = useCallback(() => onCloseRef.current?.(), []);
   const [toast, setToast] = useState(null);
+  const [enviandoPostulacion, setEnviandoPostulacion] = useState(false);
   const [fotoReclutadorError, setFotoReclutadorError] = useState(false);
   useEffect(() => {
     setFotoReclutadorError(false);
@@ -465,16 +467,21 @@ export function ModalVacante({
     setTimeout(() => setToast(null), 3200);
   };
   const handlePostularse = async () => {
+    if (enviandoPostulacion || vacante.postulada) return;
+    setEnviandoPostulacion(true);
     try {
       const json = await postularse(vacante.id_vacante);
-      if (json.ok) {
+      const resultado = resolvePostulacionState(json);
+      if (resultado.status === 'success') {
         onPostularse(vacante.id_vacante);
-        mostrarToast('postulado');
+        mostrarToast('postulado', resultado.message);
       } else {
-        mostrarToast('error', json.message ?? json.msg ?? 'No se pudo enviar la postulación.');
+        mostrarToast('error', resultado.message);
       }
     } catch {
       mostrarToast('error', 'No se pudo enviar la postulación. Verifica tu conexión.');
+    } finally {
+      setEnviandoPostulacion(false);
     }
   };
   const reclutador = vacante.reclutador ?? {};
@@ -1237,23 +1244,31 @@ export function ModalVacante({
           }}>
                 <AlertTriangle size={14} /> Reportar
               </button>
-              <button onClick={handlePostularse} style={{
+              <button onClick={handlePostularse} disabled={enviandoPostulacion} aria-busy={enviandoPostulacion} style={{
             flex: 1,
-            background: t.gradient,
-            color: '#fff',
+            background: enviandoPostulacion ? '#dbeafe' : t.gradient,
+            color: enviandoPostulacion ? '#1d4ed8' : '#fff',
             border: 'none',
             borderRadius: '12px',
             padding: '12px 20px',
             fontSize: '13px',
             fontWeight: 700,
-            cursor: 'pointer',
+            cursor: enviandoPostulacion ? 'wait' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
-            boxShadow: `0 4px 14px ${t.accentGlow}`
+            boxShadow: enviandoPostulacion ? 'none' : `0 4px 14px ${t.accentGlow}`
           }}>
-                <CheckCircle size={14} /> Postularme a esta vacante
+                {enviandoPostulacion ? <><span style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  border: '2px solid rgba(29,78,216,0.3)',
+                  borderTopColor: '#1d4ed8',
+                  animation: 'spin 0.8s linear infinite',
+                  display: 'inline-block'
+                }} /> Enviando...</> : <><CheckCircle size={14} /> Postularme a esta vacante</>}
               </button>
             </>}
         </div>

@@ -117,3 +117,27 @@ export function getVacantesEmptyMessage({ sin_discapacidades = false } = {}) {
 export function getVacantesErrorMessage(response = {}) {
   return response?.message || 'No se pudieron cargar las vacantes. Verifica tu conexion.';
 }
+
+export function resolvePostulacionState(response = {}, { enviando = false, postulada = false } = {}) {
+  if (enviando) {
+    return { status: 'sending', message: 'Enviando...', disabled: true };
+  }
+
+  if (postulada || (response?.httpOk !== false && response?.ok === true)) {
+    return {
+      status: 'success',
+      message: response?.msg || response?.message || 'Postulación enviada.',
+      disabled: true,
+    };
+  }
+
+  if (response?.httpOk === false || response?.ok === false) {
+    return {
+      status: 'error',
+      message: response?.msg || response?.message || 'No se pudo enviar la postulación.',
+      disabled: false,
+    };
+  }
+
+  return { status: 'idle', message: '', disabled: false };
+}
