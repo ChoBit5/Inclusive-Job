@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/../../config/vacantes.php';
 
 inclusijob_cors_headers('GET, OPTIONS', 'Content-Type');
 $sessionUser = requerirRol(['postulante']);
@@ -128,7 +129,6 @@ try {
     $vacantesCompatibles = [];
     $discapacidadesPorVacante = [];
     if ($tipos) {
-        $placeholders = postulante_dashboard_placeholders($tipos);
         $vacantesCompatibles = postulante_dashboard_rows(
             $con,
             "SELECT DISTINCT
@@ -141,12 +141,10 @@ try {
                 v.fecha_publicacion,
                 COALESCE(e.nombre_empresas, 'Empresa') AS empresa
              FROM vacantes v
-             INNER JOIN vacante_discapacidad vd ON vd.id_vacante = v.id_vacante
              INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
              INNER JOIN empresas e ON e.id_empresas = r.id_empresas
-             WHERE v.estado = 'activa'
-               AND COALESCE(e.estado_validacion, 0) = 1
-               AND vd.id_tipo_discapacidad IN ($placeholders)
+             WHERE " . inclusijob_vacante_visible_sql('v', 'e') . "
+               AND " . inclusijob_vacante_compatible_sql('v', 'pd_compat') . "
                AND NOT EXISTS (
                     SELECT 1
                     FROM postulaciones p
@@ -155,8 +153,8 @@ try {
                )
              ORDER BY v.fecha_publicacion DESC
              LIMIT 3",
-            str_repeat('i', count($tipos)) . 'i',
-            [...$tipos, $idPostulante]
+            'ii',
+            [$idPostulante, $idPostulante]
         );
 
         if ($vacantesCompatibles) {
@@ -180,20 +178,17 @@ try {
 
     $vacantesNuevas = 0;
     if ($tipos) {
-        $placeholders = postulante_dashboard_placeholders($tipos);
         $vacantesNuevas = postulante_dashboard_scalar(
             $con,
             "SELECT COUNT(DISTINCT v.id_vacante) AS total
              FROM vacantes v
-             INNER JOIN vacante_discapacidad vd ON vd.id_vacante = v.id_vacante
              INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
              INNER JOIN empresas e ON e.id_empresas = r.id_empresas
-             WHERE v.estado = 'activa'
-               AND COALESCE(e.estado_validacion, 0) = 1
-               AND vd.id_tipo_discapacidad IN ($placeholders)
+             WHERE " . inclusijob_vacante_visible_sql('v', 'e') . "
+               AND " . inclusijob_vacante_compatible_sql('v', 'pd_compat') . "
                AND v.fecha_publicacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)",
-            str_repeat('i', count($tipos)),
-            $tipos
+            'i',
+            [$idPostulante]
         );
     }
 

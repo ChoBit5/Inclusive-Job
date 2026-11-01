@@ -1,23 +1,23 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Accessibility, MapPin, Briefcase, ChevronRight, ArrowRight, CheckCircle, Clock, Sparkles, X, Calendar, AlertTriangle, Building2, Mail, Phone, Globe } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import { useRecomendacionVacantesIA, useVacantesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { resolveAssetUrl as backendAssetUrl } from '../../hooks/Sesion/apiSesion.js';
+import {
+  filtrarYOrdenarVacantes,
+  formatSalario,
+  getVacantesEmptyMessage,
+  getVacantesErrorMessage,
+  modalidadMatches,
+} from '../../hooks/Postulante/vacantesHelpers.js';
 function formatFecha(iso) {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   return `${parseInt(d)} ${meses[parseInt(m) - 1]} ${y}`;
-}
-function formatSalario(min, max) {
-  const fmt = n => `$${Number(n).toLocaleString('es-MX')}`;
-  if (!min && !max) return 'Salario a convenir';
-  if (!max) return `Desde ${fmt(min)} MXN`;
-  if (!min) return `Hasta ${fmt(max)} MXN`;
-  return `${fmt(min)} – ${fmt(max)} MXN`;
 }
 function getInitials(name) {
   const clean = String(name || '').trim();
@@ -25,12 +25,6 @@ function getInitials(name) {
   const parts = clean.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-function normalizeModalidad(value) {
-  return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-function modalidadMatches(value, expected) {
-  return normalizeModalidad(value) === normalizeModalidad(expected);
 }
 function Card({
   children,
@@ -1262,6 +1256,7 @@ export default function Vacantes() {
     loading: cargandoRecomendacion
   } = useRecomendacionVacantesIA();
   const [vacantes, setVacantes] = useState([]);
+  const [sinDiscapacidades, setSinDiscapacidades] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [errorRecomendacion, setErrorRecomendacion] = useState('');
@@ -1335,11 +1330,16 @@ export default function Vacantes() {
     const cargarVacantes = async () => {
       try {
         const json = await listarVacantes();
+        if (json.httpOk === false) {
+          setError(getVacantesErrorMessage(json));
+          return;
+        }
         if (!json.auth) {
-          window.location.href = '/login';
+          setError(json.message || 'No tienes una sesion valida para consultar vacantes.');
           return;
         }
         setVacantes(json.vacantes ?? []);
+        setSinDiscapacidades(json.sin_discapacidades === true);
       } catch {
         setError('No se pudieron cargar las vacantes. Verifica tu conexión.');
       } finally {
@@ -1349,20 +1349,7 @@ export default function Vacantes() {
     cargarVacantes();
   }, [listarVacantes]);
   const vacantesFiltradas = useMemo(() => {
-    let data = [...vacantes];
-    if (modalidad !== 'Todas') {
-      data = data.filter(v => modalidadMatches(v.modalidad, modalidad));
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      data = data.filter(v => v.titulo_puesto.toLowerCase().includes(q) || (v.empresa ?? '').toLowerCase().includes(q) || normalizeModalidad(v.modalidad).includes(normalizeModalidad(q)));
-    }
-    if (orden === 'recientes') {
-      data.sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
-    } else if (orden === 'salario') {
-      data.sort((a, b) => (b.salario_max ?? 0) - (a.salario_max ?? 0));
-    }
-    return data;
+    return filtrarYOrdenarVacantes(vacantes, { search, modalidad, orden });
   }, [vacantes, search, modalidad, orden]);
   const recomendacionesMap = useMemo(() => {
     return new Map(recomendacionesIA.map(item => [Number(item.id_vacante), item]));
@@ -1379,7 +1366,11 @@ export default function Vacantes() {
     const recomendacionDesdeState = Number(stateRecommendation?.id_vacante ?? stateRecommendation?.vacante?.id_vacante) === idVacante ? stateRecommendation : null;
     const recomendacion = recomendacionesMap.get(idVacante) ?? recomendacionDesdeState;
     const desdeIA = recomendacion?.vacante ?? {};
-    if (!base && !Object.keys(desdeIA).length) return;
+    if (!base && !Object.keys(desdeIA).length) {
+      openedVacanteFromQueryRef.current = idVacante;
+      setError('No se pudo abrir la vacante solicitada. Puede que ya no este visible o no sea compatible con tu perfil.');
+      return;
+    }
     const vacanteParaAbrir = {
       ...desdeIA,
       ...base,
@@ -1895,6 +1886,15 @@ export default function Vacantes() {
                     {v.titulo_puesto}
                   </h3>
 
+                  {(v.postulada || v.reportada) && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                    {v.postulada && <span style={{ fontSize: '11px', color: '#065f46', background: '#d1fae5', border: '1px solid #6ee7b7', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                      Postulada
+                    </span>}
+                    {v.reportada && <span style={{ fontSize: '11px', color: '#dc2626', background: '#fef2f2', border: '1px solid #fca5a5', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                      Reportada
+                    </span>}
+                  </div>}
+
                   {recomendacionIA && <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2015,8 +2015,21 @@ export default function Vacantes() {
             fontSize: '12.5px',
             color: t.textMuted
           }}>
-                {vacantes.length === 0 ? 'No hay vacantes activas compatibles con tu discapacidad registrada.' : 'Intenta cambiar los filtros o buscar otra palabra clave.'}
+                {vacantes.length === 0
+                  ? getVacantesEmptyMessage({ sin_discapacidades: sinDiscapacidades })
+                  : 'Intenta cambiar los filtros o buscar otra palabra clave.'}
               </p>
+              {vacantes.length === 0 && sinDiscapacidades && <Link to="/postulante/perfil" style={{
+                display: 'inline-block',
+                marginTop: '12px',
+                color: t.accent,
+                fontSize: '12.5px',
+                fontWeight: 700,
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+              }}>
+                Ir a mi perfil
+              </Link>}
             </div>}
         </Card>
       </div>
