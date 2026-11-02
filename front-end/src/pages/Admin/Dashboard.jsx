@@ -12,6 +12,11 @@ function useCountUp(end, duration = 1400) {
   const frameRef = useRef(null);
   useEffect(() => {
     if (end === null || end === undefined) return;
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      setCount(end);
+      return undefined;
+    }
     cancelAnimationFrame(frameRef.current);
     const startTime = performance.now();
     const step = now => {
@@ -170,9 +175,9 @@ export default function Dashboard() {
             </span>
           </div>
 
-          {loading ? <div className="h-[220px] flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            </div> : actividadMensual.length === 0 ? <div className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
+          {loading ? <div role="status" aria-live="polite" className="h-[220px] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+            </div> : actividadMensual.length === 0 ? <div role="status" aria-live="polite" className="h-[220px] flex items-center justify-center text-slate-500 text-sm">
               Sin datos de actividad aún.
             </div> : <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={actividadMensual} margin={{
@@ -222,12 +227,12 @@ export default function Dashboard() {
               </span>}
           </h2>
 
-          {loading ? <div className="space-y-3">
+          {loading ? <div role="status" aria-live="polite" className="space-y-3">
               {[1, 2, 3].map(i => <div key={i} className="bg-slate-700/40 rounded-xl p-3 animate-pulse">
                   <div className="h-3 bg-slate-600 rounded w-3/4 mb-2" />
                   <div className="h-2 bg-slate-600 rounded w-1/2" />
                 </div>)}
-            </div> : empresasPendientes.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-center">
+            </div> : empresasPendientes.length === 0 ? <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-8 text-center">
               <CheckCircle size={32} className="text-emerald-400 mb-2" />
               <p className="text-emerald-400 text-sm font-medium">¡Todo al día!</p>
               <p className="text-slate-500 text-xs mt-1">No hay empresas pendientes</p>

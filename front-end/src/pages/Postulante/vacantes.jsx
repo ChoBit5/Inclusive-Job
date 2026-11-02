@@ -5,6 +5,7 @@ import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import { useRecomendacionVacantesIA, useVacantesPostulante } from '../../hooks/Postulante/useDomain.js';
+import { useFocusTrap } from '../../components/useFocusTrap.js';
 import { resolveAssetUrl as backendAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 import {
   filtrarYOrdenarVacantes,
@@ -78,7 +79,7 @@ function SectionHead({
             {sub}
           </p>}
       </div>
-      {action && <button onClick={onAction} style={{
+      {action && <button className="ij-postulant-link-btn" onClick={onAction} style={{
       display: 'flex',
       alignItems: 'center',
       gap: '4px',
@@ -100,7 +101,7 @@ function FilterButton({
   children,
   onClick
 }) {
-  return <button onClick={onClick} style={{
+  return <button className="ij-postulant-filter" onClick={onClick} style={{
     border: `1px solid ${active ? t.accentBorder : t.border}`,
     background: active ? t.accentSoft : '#fff',
     color: active ? t.accent : t.textSecondary,
@@ -125,12 +126,15 @@ export function ModalReporte({
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useRef(null);
+  const titleId = useId();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+  useFocusTrap({ open: Boolean(vacante), containerRef: dialogRef, onClose });
   const motivosSugeridos = ['Información falsa o engañosa', 'Oferta discriminatoria', 'Requisitos no relacionados con el puesto', 'Empresa o contacto sospechoso', 'Contenido inapropiado'];
   const handleEnviar = async () => {
     if (!motivo.trim()) {
@@ -163,7 +167,7 @@ export function ModalReporte({
     justifyContent: 'center',
     padding: '20px'
   }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={e => e.stopPropagation()} style={{
       background: '#fff',
       borderRadius: '20px',
       width: '100%',
@@ -201,7 +205,7 @@ export function ModalReporte({
                 <AlertTriangle size={20} color="#fff" />
               </div>
               <div>
-                <h2 style={{
+                <h2 id={titleId} style={{
                 margin: 0,
                 fontSize: '17px',
                 fontWeight: 800,
@@ -219,7 +223,7 @@ export function ModalReporte({
                 </p>
               </div>
             </div>
-            <button onClick={onClose} style={{
+          <button type="button" className="ij-postulant-icon-btn" onClick={onClose} aria-label="Cerrar reporte" style={{
             width: '32px',
             height: '32px',
             borderRadius: '8px',
@@ -260,7 +264,7 @@ export function ModalReporte({
             flexWrap: 'wrap',
             gap: '6px'
           }}>
-              {motivosSugeridos.map(s => <button key={s} onClick={() => setMotivo(s)} style={{
+              {motivosSugeridos.map(s => <button type="button" className="ij-postulant-choice" key={s} onClick={() => setMotivo(s)} style={{
               border: `1px solid ${motivo === s ? '#fca5a5' : t.border}`,
               background: motivo === s ? '#fef2f2' : '#f8fafc',
               color: motivo === s ? '#dc2626' : t.textSecondary,
@@ -277,19 +281,19 @@ export function ModalReporte({
 
           
           <div>
-            <p style={{
+            <label htmlFor="reporte-motivo" style={{
             margin: '0 0 8px',
             fontSize: '11px',
             fontWeight: 700,
             color: '#6b7280',
             textTransform: 'uppercase',
             letterSpacing: '0.6px'
-          }}>
+            }}>
               Describe el problema <span style={{
               color: '#dc2626'
             }}>*</span>
-            </p>
-            <textarea value={motivo} onChange={e => {
+            </label>
+            <textarea id="reporte-motivo" aria-invalid={Boolean(error)} aria-describedby={error ? 'reporte-error' : undefined} value={motivo} onChange={e => {
             setMotivo(e.target.value);
             setError('');
           }} placeholder="Explica brevemente por qué reportas esta vacante..." maxLength={500} rows={4} style={{
@@ -311,7 +315,7 @@ export function ModalReporte({
             justifyContent: 'space-between',
             marginTop: '4px'
           }}>
-              {error ? <p style={{
+              {error ? <p id="reporte-error" role="alert" aria-live="assertive" style={{
               margin: 0,
               fontSize: '11px',
               color: '#dc2626',
@@ -358,7 +362,7 @@ export function ModalReporte({
         display: 'flex',
         gap: '10px'
       }}>
-          <button onClick={onClose} style={{
+          <button className="ij-postulant-icon-btn" onClick={onClose} aria-label="Cerrar reporte" style={{
           flex: 1,
           background: '#f8fafc',
           color: t.textSecondary,
@@ -371,7 +375,7 @@ export function ModalReporte({
         }}>
             Cancelar
           </button>
-          <button onClick={handleEnviar} disabled={enviando} style={{
+          <button className="ij-postulant-btn" onClick={handleEnviar} disabled={enviando} style={{
           flex: 2,
           background: enviando ? '#9ca3af' : 'linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%)',
           color: '#fff',
@@ -590,7 +594,7 @@ export function ModalVacante({
               </div>
             </div>
 
-            <button ref={closeButtonRef} onClick={closeModal} aria-label="Cerrar detalle de vacante" style={{
+            <button className="ij-postulant-icon-btn" ref={closeButtonRef} onClick={closeModal} aria-label="Cerrar detalle de vacante" style={{
             width: '32px',
             height: '32px',
             borderRadius: '8px',
@@ -1226,7 +1230,7 @@ export function ModalVacante({
                 <CheckCircle size={14} /> Postulado
               </div>
             </> : <>
-              <button onClick={() => onAbrirReporte(vacante)} style={{
+              <button className="ij-postulant-btn" onClick={() => onAbrirReporte(vacante)} style={{
             flex: 1,
             background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%)',
             color: '#fff',
@@ -1244,7 +1248,7 @@ export function ModalVacante({
           }}>
                 <AlertTriangle size={14} /> Reportar
               </button>
-              <button onClick={handlePostularse} disabled={enviandoPostulacion} aria-busy={enviandoPostulacion} style={{
+              <button className="ij-postulant-btn" onClick={handlePostularse} disabled={enviandoPostulacion} aria-busy={enviandoPostulacion} style={{
             flex: 1,
             background: enviandoPostulacion ? '#dbeafe' : t.gradient,
             color: enviandoPostulacion ? '#1d4ed8' : '#fff',
@@ -1511,7 +1515,7 @@ export default function Vacantes() {
   return <PortalLayout theme={t} navItems={postulantNav} user={{
     nombre: '',
     rol: 'Postulante'
-  }} pageTitle="Vacantes" headerActions={<button className="ij-vacantes-action" onClick={() => navigate('/postulante/postulaciones')} style={{
+  }} pageTitle="Vacantes" headerActions={<button className="ij-vacantes-action ij-postulant-btn" onClick={() => navigate('/postulante/postulaciones')} style={{
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
@@ -1551,6 +1555,9 @@ export default function Vacantes() {
         }
         .ij-vacante-card:hover {
           transform: translateY(-2px);
+        }
+        @media(max-width:560px){
+          .ij-vacantes-floating-ai { display:none !important; }
         }
       `}</style>
 
@@ -1664,7 +1671,7 @@ export default function Vacantes() {
           gap: '10px',
           flexWrap: 'wrap'
         }}>
-            <button className="ij-vacantes-ai-btn" onClick={handleRecomendarVacantes} disabled={cargandoRecomendacion} style={{
+            <button className="ij-vacantes-ai-btn ij-postulant-btn" onClick={handleRecomendarVacantes} disabled={cargandoRecomendacion} style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1765,7 +1772,7 @@ export default function Vacantes() {
         </div>
 
         
-        {error && <div style={{
+        {error && <div role="alert" style={{
         padding: '14px 20px',
         borderRadius: '14px',
         background: '#fef2f2',
@@ -1799,7 +1806,7 @@ export default function Vacantes() {
             display: 'inline-block'
           }} />
                 Analizando tu perfil y las vacantes disponibles...
-              </div> : errorRecomendacion ? <div style={{
+              </div> : errorRecomendacion ? <div role="alert" style={{
           padding: '18px 20px',
           color: '#b91c1c',
           background: '#fef2f2',
@@ -1814,7 +1821,7 @@ export default function Vacantes() {
         }}>
                 {recomendacionesIA.map((item, index) => {
             const vacante = item.vacante ?? {};
-            return <button className="ij-vacante-card" key={item.id_vacante} onClick={() => abrirVacanteRecomendada(item)} style={{
+            return <button className="ij-vacante-card ij-postulant-choice" key={item.id_vacante} onClick={() => abrirVacanteRecomendada(item)} style={{
               textAlign: 'left',
               background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
               border: 'none',
@@ -2140,7 +2147,7 @@ export default function Vacantes() {
             </div>}
         </Card>
       </div>
-      <button className="ij-vacantes-floating-ai" onClick={handleRecomendarVacantes} disabled={cargandoRecomendacion} aria-label="Recomendar vacantes con IA" style={{
+      <button className="ij-vacantes-floating-ai ij-postulant-btn" onClick={handleRecomendarVacantes} disabled={cargandoRecomendacion} aria-label="Recomendar vacantes con IA" style={{
       position: 'fixed',
       right: 96,
       bottom: 30,

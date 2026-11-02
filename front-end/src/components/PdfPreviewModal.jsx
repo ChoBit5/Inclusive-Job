@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Loader, X } from 'lucide-react';
+import { useFocusTrap } from './useFocusTrap.js';
 export default function PdfPreviewModal({
   open,
   sourceUrl,
@@ -11,6 +12,9 @@ export default function PdfPreviewModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const createdUrlRef = useRef('');
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  useFocusTrap({ open, containerRef: dialogRef, onClose });
   useEffect(() => {
     if (!open || !sourceUrl) return undefined;
     let active = true;
@@ -61,7 +65,7 @@ export default function PdfPreviewModal({
   const border = theme.border || 'rgba(255,255,255,0.12)';
   const text = theme.textPrimary || '#fff';
   const muted = theme.textMuted || '#94a3b8';
-  return <div className="ij-pdf-modal-overlay" role="dialog" aria-modal="true" aria-label={title} style={{
+  return <div ref={dialogRef} className="ij-pdf-modal-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{
     position: 'fixed',
     inset: 0,
     zIndex: 1000000,
@@ -157,7 +161,7 @@ export default function PdfPreviewModal({
           <div style={{
           minWidth: 0
         }}>
-            <p className="ij-pdf-modal-title" style={{
+            <p id={titleId} className="ij-pdf-modal-title" style={{
             margin: 0,
             color: text,
             fontWeight: 800,
@@ -192,7 +196,7 @@ export default function PdfPreviewModal({
               Abrir
             </a>}
 
-          <button className="ij-pdf-modal-close" type="button" onClick={onClose} aria-label="Cerrar visor PDF" style={{
+          <button className="ij-pdf-modal-close ij-touch-target" type="button" onClick={onClose} aria-label="Cerrar visor PDF" style={{
           width: 36,
           height: 36,
           borderRadius: 10,

@@ -98,11 +98,11 @@ export default function Sidebar({
               <Accessibility size={16} className="text-white" />
             </div>}
           
-          <button onClick={onMobileClose} className="lg:hidden text-slate-400 hover:text-white p-1 rounded" aria-label="Cerrar menú">
+          <button onClick={onMobileClose} className="ij-touch-target lg:hidden text-slate-400 hover:text-white p-1 rounded" aria-label="Cerrar menú">
             <X size={18} />
           </button>
           
-          {!collapsed && <button onClick={onToggle} className="hidden lg:flex text-slate-400 hover:text-white p-1 rounded transition-colors" aria-label="Colapsar menú">
+          {!collapsed && <button onClick={onToggle} className="ij-touch-target hidden lg:flex text-slate-400 hover:text-white p-1 rounded transition-colors" aria-label="Colapsar menú">
               <ChevronLeft size={18} />
             </button>}
         </div>
@@ -130,7 +130,7 @@ export default function Sidebar({
 
         
         {collapsed && <div className="p-2 border-t border-slate-700/50">
-            <button onClick={onToggle} className="w-full flex justify-center text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors" aria-label="Expandir menú">
+            <button onClick={onToggle} className="ij-touch-target w-full flex justify-center text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors" aria-label="Expandir menú">
               <ChevronRight size={18} />
             </button>
           </div>}
@@ -139,7 +139,7 @@ export default function Sidebar({
         <div className="p-3 border-t border-slate-700/50">
           {collapsed ? <div className="flex flex-col items-center gap-2">
               <UserAvatar user={user} />
-              <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" aria-label="Cerrar sesion" title="Salir">
+              <button onClick={handleLogout} className="ij-touch-target w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" aria-label="Cerrar sesion" title="Salir">
                 <LogOut size={17} />
               </button>
             </div> : <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export default function Sidebar({
                 <p className="text-white text-xs font-semibold truncate">{user?.nombre || user?.nombres || 'Administrador'}</p>
                 <p className="text-slate-500 text-xs truncate">{user?.rol || 'Panel de control'}</p>
               </div>
-              <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center flex-shrink-0 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" aria-label="Cerrar sesion" title="Salir">
+              <button onClick={handleLogout} className="ij-touch-target w-9 h-9 flex items-center justify-center flex-shrink-0 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" aria-label="Cerrar sesion" title="Salir">
                 <LogOut size={17} />
               </button>
             </div>}

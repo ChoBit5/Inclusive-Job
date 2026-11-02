@@ -7,7 +7,7 @@ export const reclutadorTheme = {
   sidebarBorder: 'rgba(139,92,246,0.20)',
   textPrimary: '#ffffff',
   textSecondary: '#d4cff0',
-  textMuted: '#9c95be',
+  textMuted: '#bcb4d8',
   accent: '#8b5cf6',
   accentHover: '#7c3aed',
   accentSoft: 'rgba(139,92,246,0.12)',
@@ -29,7 +29,11 @@ export const reclutadorTheme = {
   gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
   gradientGlow: '0 0 45px rgba(139,92,246,0.35)',
   cardShadow: '0 10px 30px rgba(0,0,0,0.35)',
-  cardHighlight: 'rgba(255,255,255,0.02)'
+  cardHighlight: 'rgba(255,255,255,0.02)',
+  radiusSm: '10px',
+  radiusMd: '14px',
+  radiusLg: '20px',
+  focusRing: '#c4b5fd'
 };
 export const postulantTheme = {
   name: 'postulante',
@@ -40,7 +44,7 @@ export const postulantTheme = {
   sidebarBorder: 'rgba(59,130,246,0.15)',
   textPrimary: '#0f1729',
   textSecondary: '#4a5a7a',
-  textMuted: '#9aaac8',
+  textMuted: '#52637f',
   accent: '#2563eb',
   accentHover: '#1d4ed8',
   accentSoft: 'rgba(37,99,235,0.08)',
@@ -56,5 +60,11 @@ export const postulantTheme = {
   headerBg: 'rgba(248,250,255,0.95)',
   headerBorder: 'rgba(59,130,246,0.12)',
   gradient: 'linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%)',
-  gradientGlow: '0 0 40px rgba(37,99,235,0.2)'
+  gradientGlow: '0 0 40px rgba(37,99,235,0.2)',
+  cardShadow: '0 14px 35px rgba(15,23,42,0.10)',
+  cardHighlight: 'rgba(255,255,255,0.65)',
+  radiusSm: '10px',
+  radiusMd: '14px',
+  radiusLg: '20px',
+  focusRing: '#1d4ed8'
 };

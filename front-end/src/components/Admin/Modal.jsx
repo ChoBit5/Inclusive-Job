@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../useFocusTrap.js';
 export default function Modal({
   open,
   onClose,
@@ -8,9 +9,11 @@ export default function Modal({
   children
 }) {
   const dialogRef = useRef(null);
+  const titleId = useId();
+  useFocusTrap({ open, containerRef: dialogRef, onClose });
+  /* Keep the page behind the dialog from scrolling while it is open. */
   useEffect(() => {
     if (open) {
-      dialogRef.current?.focus();
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -19,13 +22,6 @@ export default function Modal({
       document.body.style.overflow = '';
     };
   }, [open]);
-  useEffect(() => {
-    const handler = e => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (open) window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
   if (!open) return null;
   const sizeClasses = {
     sm: 'max-w-sm',
@@ -33,7 +29,7 @@ export default function Modal({
     lg: 'max-w-2xl',
     xl: 'max-w-4xl'
   };
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
@@ -47,11 +43,11 @@ export default function Modal({
         `}>
         
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-          <h2 id="modal-title" className="text-white font-semibold text-lg">
+          <h2 id={titleId} className="text-white font-semibold text-lg">
             {title}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition-colors" aria-label="Cerrar modal">
-            <X size={18} />
+          <button type="button" onClick={onClose} className="ij-touch-target text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition-colors" aria-label="Cerrar modal">
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 

@@ -86,19 +86,17 @@ export default function PortalSidebar({
           }}>
               IJ
             </div>
-            {!collapsed && <div style={{
-            overflow: 'hidden'
-          }}>
+            {!collapsed && <div style={{ overflow: 'hidden' }}>
                 <p style={{
               margin: 0,
-              fontSize: '14px',
+              fontSize: '11px',
               fontWeight: 700,
-              color: t.textPrimary,
+              color: t.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
               whiteSpace: 'nowrap'
             }}>
-                  Inclusive <span style={{
-                color: t.accent
-              }}>Job IA</span>
+                  Portal
                 </p>
                 <p style={{
               margin: 0,
@@ -149,6 +147,7 @@ export default function PortalSidebar({
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
+              minHeight: '44px',
               padding: collapsed ? '10px 0' : '9px 12px',
               justifyContent: collapsed ? 'center' : 'flex-start',
               borderRadius: '10px',
@@ -299,7 +298,9 @@ function btnStyle(t) {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '6px',
+    minWidth: '44px',
+    minHeight: '44px',
+    padding: '10px',
     borderRadius: '8px',
     color: t.textMuted,
     display: 'flex',

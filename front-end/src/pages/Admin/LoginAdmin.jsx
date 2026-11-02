@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Accessibility, ShieldCheck, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, Loader2 } from 'lucide-react';
 import { useSesion } from '../../hooks/Sesion/useSesion.js';
+import logo from '../../assets/img/Logo de inicio.png';
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -66,13 +67,8 @@ export default function Login() {
     }}>
                 
                 <div style={styles.logoWrap}>
-                    <div style={styles.logoIcon}>
-                        <Accessibility size={28} color="#fff" />
-                    </div>
+                    <img src={logo} alt="Logo de InclusiJob IA" style={styles.logoImage} />
                     <div>
-                        <h1 style={styles.logoTitle}>
-                            Inclusive<span style={styles.logoAccent}> Job IA</span>
-                        </h1>
                         <p style={styles.logoSub}>Panel Administrativo</p>
                     </div>
                 </div>
@@ -190,7 +186,7 @@ const styles = {
     background: '#020817',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
+    fontFamily: 'var(--ij-font-sans)',
     padding: '1rem',
     boxSizing: 'border-box'
   },
@@ -255,9 +251,17 @@ const styles = {
   },
   logoWrap: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '8px',
     marginBottom: '1.5rem'
+  },
+  logoImage: {
+    width: 'min(100%, 280px)',
+    height: 'auto',
+    maxHeight: '90px',
+    objectFit: 'contain',
+    objectPosition: 'left center'
   },
   logoIcon: {
     width: '52px',

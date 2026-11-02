@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import fondo from "../assets/img/Designer (21).png";
 import img2 from "../assets/img/Designer1.png";
 import fondo4 from "../assets/img/fondoQ.png";
+import logo from "../assets/img/Logo de inicio.png";
 import { useComentariosPublicos } from "../hooks/Publico/useDomain.js";
 function formatFecha(iso) {
   if (!iso) return "";
@@ -44,7 +45,7 @@ function Reveal({
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  return <div ref={ref} className={className} style={{
+  return <div ref={ref} className={`ij-reveal ${className}`} style={{
     opacity: visible ? 1 : 0,
     transform: visible ? "translateY(0)" : "translateY(45px)",
     transition: `opacity 700ms ease, transform 700ms ease`,
@@ -133,6 +134,10 @@ export default function Home() {
     const startY = window.scrollY;
     const targetY = el.getBoundingClientRect().top + startY;
     const distance = targetY - startY;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      window.scrollTo({ top: targetY, behavior: "auto" });
+      return;
+    }
     const duration = 900;
     let startTime = null;
     const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -165,14 +170,19 @@ export default function Home() {
     desc: "Muestra tu experiencia, CV y certificaciones."
   }];
   return <div className="w-screen min-h-screen bg-gray-100 overflow-x-hidden relative left-1/2 -ml-[50vw]">
-      <style>{`html { scroll-behavior: smooth; }`}</style>
+      <style>{`
+        html { scroll-behavior: smooth; }
+        @media (prefers-reduced-motion: reduce) {
+          html { scroll-behavior: auto; }
+          .ij-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+        }
+      `}</style>
 
       
       <header className="w-full bg-indigo-900 text-white shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between px-6 py-4 gap-4">
           <div className="flex items-center gap-3">
-            <img src="/logo.webp" alt="Logo" className="w-10 h-10 object-contain bg-white rounded p-1" />
-            <h1 className="text-xl font-semibold">InclusiveJobIA</h1>
+            <img src={logo} alt="Logo de InclusiJob IA" className="h-10 w-auto max-w-[210px] object-contain" />
           </div>
           <nav className="flex flex-wrap justify-center md:justify-start gap-4 text-sm">
             <a href="#quienes" onClick={e => scrollToSection(e, "quienes")} className="hover:opacity-70 cursor-pointer">Quienes somos</a>
@@ -289,7 +299,7 @@ export default function Home() {
                 <div className="flex flex-col gap-4">
                   {data.map((item, i) => {
                   const isOpen = active === i;
-                  return <div key={i} onClick={() => setActive(isOpen ? null : i)} className={`group border rounded-2xl p-4 cursor-pointer transition-all duration-300 ${isOpen ? "bg-white/15 border-indigo-300/40 shadow-xl" : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}`}>
+                  return <button type="button" key={i} onClick={() => setActive(isOpen ? null : i)} aria-expanded={isOpen} className={`group w-full text-left border rounded-2xl p-4 cursor-pointer transition-all duration-300 ${isOpen ? "bg-white/15 border-indigo-300/40 shadow-xl" : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"}`}>
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
                             <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl transition ${isOpen ? "bg-indigo-500/25 text-indigo-100" : "bg-white/10 text-indigo-200"}`}>{item.icon}</div>
@@ -300,7 +310,7 @@ export default function Home() {
                         <div className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-40 mt-4 opacity-100" : "max-h-0 opacity-0"}`}>
                           <p className="text-sm text-gray-300 leading-relaxed pl-[60px]">{item.desc}</p>
                         </div>
-                      </div>;
+                      </button>;
                 })}
                 </div>
               </Reveal>
@@ -425,7 +435,7 @@ export default function Home() {
           }}>
 
               
-              <div style={{
+              <div role={feedback.msg ? "status" : undefined} aria-live="polite" aria-atomic="true" style={{
               position: "absolute",
               bottom: "80px",
               left: "50%",
@@ -445,9 +455,11 @@ export default function Home() {
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
                   Comparte tu experiencia
                 </h2>
-                <form onSubmit={handleEnviar} className="flex flex-col gap-4">
-                  <input type="text" placeholder="Tu nombre" value={nombre} onChange={e => setNombre(e.target.value)} maxLength={150} className="p-3 rounded-xl bg-gray-100 focus:bg-white border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition" />
-                  <textarea placeholder="Escribe tu comentario..." rows="4" value={texto} onChange={e => setTexto(e.target.value)} maxLength={1000} className="p-3 rounded-xl bg-gray-100 focus:bg-white border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition resize-none" />
+                  <form onSubmit={handleEnviar} className="flex flex-col gap-4">
+                   <label htmlFor="home-comment-name" className="sr-only">Tu nombre</label>
+                   <input id="home-comment-name" type="text" placeholder="Tu nombre" value={nombre} onChange={e => setNombre(e.target.value)} maxLength={150} className="p-3 rounded-xl bg-gray-100 focus:bg-white border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition" />
+                   <label htmlFor="home-comment-text" className="sr-only">Escribe tu comentario</label>
+                   <textarea id="home-comment-text" placeholder="Escribe tu comentario..." rows="4" value={texto} onChange={e => setTexto(e.target.value)} maxLength={1000} className="p-3 rounded-xl bg-gray-100 focus:bg-white border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition resize-none" />
                   <p className="text-xs text-gray-400 text-right -mt-2">{texto.length}/1000</p>
 
                   <button type="submit" disabled={enviando} className={`mt-1 text-white py-3 rounded-xl shadow-lg transition-all font-medium ${enviando ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-800 hover:bg-indigo-700 hover:scale-105"}`}>
@@ -488,8 +500,9 @@ export default function Home() {
             <h3 className="text-white font-semibold mb-4">Mantente informado</h3>
             <p className="text-sm text-indigo-200 mb-4">Recibe noticias y actualizaciones de nuestra plataforma.</p>
             <form className="flex flex-col gap-3">
-              <input type="email" placeholder="Ingresa tu correo" className="rounded-full px-5 py-3 bg-indigo-800 border border-indigo-700 text-white placeholder-indigo-300 focus:outline-none focus:border-white" />
-              <button className="rounded-full bg-white text-indigo-900 px-6 py-3 font-medium hover:bg-indigo-100 transition">Enviar</button>
+              <label htmlFor="home-newsletter-email" className="sr-only">Ingresa tu correo</label>
+              <input id="home-newsletter-email" type="email" placeholder="Ingresa tu correo" className="rounded-full px-5 py-3 bg-indigo-800 border border-indigo-700 text-white placeholder-indigo-300 focus:outline-none focus:border-white" />
+              <button type="submit" className="ij-touch-target rounded-full bg-white text-indigo-900 px-6 py-3 font-medium hover:bg-indigo-100 transition">Enviar</button>
             </form>
           </div>
         </div>

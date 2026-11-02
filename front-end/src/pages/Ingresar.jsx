@@ -4,6 +4,7 @@ import { rutaPorRol } from "../hooks/Sesion/apiSesion.js";
 import { useSesion } from "../hooks/Sesion/useSesion.js";
 import { useGoogleDomain } from "../hooks/Google/useDomain.js";
 import { errorAlert, successAlert } from "../components/Admin/alerts";
+import GoogleMark from "../components/GoogleMark.jsx";
 import { GoogleLogin } from "@react-oauth/google";
 const LOGIN_ALERT_THEME = {
   bgSurface: "#f8fbff",
@@ -142,11 +143,10 @@ const Registro = () => {
           width: isMobile ? "88%" : 520
         }}>
 
-            <div style={styles.logoRow}>
-              <div style={styles.logoWrapper}>
-                <div style={styles.logoGlow} />
-                <img src="/logo.webp" alt="InclusiJob IA" style={styles.logo} />
-              </div>
+            <div style={{
+            ...styles.logoRow,
+            justifyContent: "flex-end"
+          }}>
               <a href="/" style={styles.backBtn}>← Inicio</a>
             </div>
 
@@ -156,9 +156,11 @@ const Registro = () => {
             <form onSubmit={handleSubmit}>
               <div style={styles.form}>
 
-                <input type="email" name="correo" placeholder="Correo electrónico" style={styles.input} onChange={handleChange} />
+                <label htmlFor="login-correo" className="sr-only">Correo electrónico</label>
+                <input id="login-correo" type="email" name="correo" placeholder="Correo electrónico" style={styles.input} onChange={handleChange} />
 
-                <input type="password" name="password" placeholder="Contraseña" style={styles.input} onChange={handleChange} />
+                <label htmlFor="login-password" className="sr-only">Contraseña</label>
+                <input id="login-password" type="password" name="password" placeholder="Contraseña" style={styles.input} onChange={handleChange} />
 
                 <button type="submit" style={styles.registerBtn}>
                   Ingresar
@@ -198,10 +200,7 @@ const Registro = () => {
                 </div>
 
                 <button type="button" onClick={dispararGooglePopup} style={styles.googleBtn}>
-                  <img src="/logo.webp" alt="Google" style={{
-                  width: 24,
-                  height: 24
-                }} />
+                  <GoogleMark size={24} />
                   Continuar con Google
                 </button>
 
@@ -230,7 +229,7 @@ const styles = {
     minHeight: "100vh",
     display: "flex",
     overflow: "hidden",
-    fontFamily: "Poppins, sans-serif",
+    fontFamily: "var(--ij-font-sans)",
     background: "linear-gradient(135deg,#eef4ff,#dbeafe)"
   },
   leftSide: {

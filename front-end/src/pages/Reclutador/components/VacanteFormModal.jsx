@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Accessibility, ArrowRight, CalendarDays, FileText, Loader2, Sparkles, X } from 'lucide-react';
 import { INITIAL_VACANTE_FORM as INITIAL_FORM, SALARIO_MAXIMO_VACANTE as SALARIO_MAX, SALARIO_MINIMO_VACANTE as SALARIO_MIN, getDiscapacidadId, getDiscapacidadNombre, getVacanteDiscapacidadIds as getIds, toDateInputValue as toDate, validateVacanteForm as validateForm } from '../../../hooks/Reclutador/vacantesHelpers.js';
+import { useFocusTrap } from '../../../components/useFocusTrap.js';
 export const SALARIO_MINIMO_VACANTE = SALARIO_MIN;
 export const SALARIO_MAXIMO_VACANTE = SALARIO_MAX;
 export const INITIAL_VACANTE_FORM = INITIAL_FORM;
@@ -21,6 +23,8 @@ export function VacanteFormModal({
   onMejorarIA,
   onAplicarIA
 }) {
+  const modalRef = useRef(null);
+  useFocusTrap({ open: true, containerRef: modalRef, onClose });
   const toggleDiscapacidad = id => {
     const current = formData.discapacidades ?? [];
     const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id];
@@ -29,16 +33,16 @@ export function VacanteFormModal({
       discapacidades: next
     });
   };
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="presentation">
       <VacanteModalStyles />
-      <div className="bg-[#131926] border border-slate-800 w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl text-slate-200">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="vacante-modal-title" tabIndex={-1} className="bg-[#131926] border border-slate-800 w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl text-slate-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#182032]">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 id="vacante-modal-title" className="text-lg font-bold text-white flex items-center gap-2">
             <FileText className="h-5 w-5 text-purple-500" />
             {editingVacante ? 'Editar Vacante' : 'Publicar Nueva Vacante'}
           </h2>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-white">
-            <X className="h-5 w-5" />
+          <button type="button" onClick={onClose} aria-label="Cerrar formulario de vacante" className="ij-touch-target text-slate-400 hover:text-white">
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <form onSubmit={onSubmit} noValidate className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
@@ -48,22 +52,22 @@ export function VacanteFormModal({
         })} required loading={iaLoading?.titulo_puesto} sugerencia={iaSugerencias?.titulo_puesto} onMejorar={() => onMejorarIA?.('titulo_puesto')} onAplicar={texto => onAplicarIA?.('titulo_puesto', texto)} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select label="Modalidad" value={formData.modalidad} onChange={value => setFormData({
+            <Select id="vacante-modalidad" label="Modalidad" value={formData.modalidad} onChange={value => setFormData({
             ...formData,
             modalidad: value
           })} options={['Presencial', 'Remoto', 'Hibrido']} />
-            <Select label="Estado" value={formData.estado} onChange={value => setFormData({
+            <Select id="vacante-estado" label="Estado" value={formData.estado} onChange={value => setFormData({
             ...formData,
             estado: value
           })} options={['activa', 'pausada']} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Salario minimo *" type="number" min={SALARIO_MINIMO_VACANTE} max={SALARIO_MAXIMO_VACANTE} value={formData.salario_min} onChange={value => setFormData({
+            <Input id="vacante-salario-min" label="Salario minimo *" type="number" min={SALARIO_MINIMO_VACANTE} max={SALARIO_MAXIMO_VACANTE} value={formData.salario_min} onChange={value => setFormData({
             ...formData,
             salario_min: value
           })} required />
-            <Input label="Salario maximo *" type="number" min={SALARIO_MINIMO_VACANTE} max={SALARIO_MAXIMO_VACANTE} value={formData.salario_max} onChange={value => setFormData({
+            <Input id="vacante-salario-max" label="Salario maximo *" type="number" min={SALARIO_MINIMO_VACANTE} max={SALARIO_MAXIMO_VACANTE} value={formData.salario_max} onChange={value => setFormData({
             ...formData,
             salario_max: value
           })} required />
@@ -74,11 +78,11 @@ export function VacanteFormModal({
               <CalendarDays className="h-4 w-4 text-purple-400" /> Fechas de publicacion
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Fecha de publicacion *" type="date" value={formData.fecha_publicacion} max={formData.fecha_cierre || undefined} onChange={value => setFormData({
+              <Input id="vacante-fecha-publicacion" label="Fecha de publicacion *" type="date" value={formData.fecha_publicacion} max={formData.fecha_cierre || undefined} onChange={value => setFormData({
               ...formData,
               fecha_publicacion: value
             })} required />
-              <Input label="Fecha de cierre *" type="date" value={formData.fecha_cierre} min={formData.fecha_publicacion || undefined} onChange={value => setFormData({
+              <Input id="vacante-fecha-cierre" label="Fecha de cierre *" type="date" value={formData.fecha_cierre} min={formData.fecha_publicacion || undefined} onChange={value => setFormData({
               ...formData,
               fecha_cierre: value
             })} required />
@@ -150,7 +154,7 @@ function CampoConIA({
   return <div>
       
       <div className="flex items-center justify-between gap-3 mb-1.5">
-        <label className="text-xs font-bold uppercase text-slate-400">{label}</label>
+        <label htmlFor={campo} className="text-xs font-bold uppercase text-slate-400">{label}</label>
 
         {iaEnabled && <button type="button" onClick={onMejorar} disabled={loading} className="ia-btn group relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-600/15 via-fuchsia-600/10 to-purple-600/15 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-all duration-300 hover:border-purple-400/60 hover:text-purple-100 hover:shadow-[0_0_18px_-3px_rgba(192,132,252,0.55)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none shrink-0">
             <span className="ia-btn-shimmer pointer-events-none absolute inset-0 overflow-hidden" />
@@ -164,7 +168,7 @@ function CampoConIA({
           </button>}
       </div>
 
-      {tipo === 'textarea' ? <TextareaPlain value={value} onChange={onChange} rows={rows} /> : <InputPlain value={value} onChange={onChange} required={required} />}
+      {tipo === 'textarea' ? <TextareaPlain id={campo} value={value} onChange={onChange} rows={rows} /> : <InputPlain id={campo} value={value} onChange={onChange} required={required} />}
 
       {iaEnabled && sugerencia && <div className="ia-suggestion-panel relative mt-2.5 rounded-xl border border-purple-800/40 bg-gradient-to-b from-purple-950/25 via-[#0f1320] to-[#0b0f19] p-3.5 space-y-2.5 shadow-[0_4px_24px_-8px_rgba(147,51,234,0.35)]">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-purple-400">
@@ -229,21 +233,24 @@ export function DiscapacidadBadges({
     </div>;
 }
 function InputPlain({
+  id,
   value,
   onChange,
   type = 'text',
   required = false
 }) {
-  return <input required={required} type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500" />;
+  return <input id={id} required={required} type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500" />;
 }
 function TextareaPlain({
+  id,
   value,
   onChange,
   rows = 3
 }) {
-  return <textarea rows={rows} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-4 text-sm text-white focus:outline-none focus:border-purple-500" />;
+  return <textarea id={id} rows={rows} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-800 rounded-lg p-4 text-sm text-white focus:outline-none focus:border-purple-500" />;
 }
 function Input({
+  id,
   label,
   value,
   onChange,
@@ -252,13 +259,14 @@ function Input({
   min,
   max
 }) {
-  return <label className="block text-xs font-bold uppercase text-slate-400 mb-1">{label}<input required={required} type={type} min={min} max={max} value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500" /></label>;
+  return <label htmlFor={id} className="block text-xs font-bold uppercase text-slate-400 mb-1">{label}<input id={id} required={required} type={type} min={min} max={max} value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500" /></label>;
 }
 function Select({
+  id,
   label,
   value,
   onChange,
   options
 }) {
-  return <label className="block text-xs font-bold uppercase text-slate-400 mb-1">{label}<select value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-purple-500">{options.map(option => <option key={option} value={option}>{option}</option>)}</select></label>;
+  return <label htmlFor={id} className="block text-xs font-bold uppercase text-slate-400 mb-1">{label}<select id={id} value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-purple-500">{options.map(option => <option key={option} value={option}>{option}</option>)}</select></label>;
 }

@@ -47,6 +47,11 @@ function useCountUp(end, duration = 1200) {
   const [v, setV] = useState(0);
   const raf = useRef(null);
   useEffect(() => {
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      setV(end);
+      return undefined;
+    }
     const start = performance.now();
     const step = now => {
       const p = Math.min((now - start) / duration, 1);
@@ -327,7 +332,7 @@ export default function ReclutadorDashboard() {
       [campo]: null
     }));
   };
-  return <PortalLayout theme={t} navItems={reclutadorNav} user={currentUser} pageTitle="Dashboard" notifications={stats[3].value} headerActions={<button onClick={openModal} disabled={!empresaAprobada} aria-label={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.titulo} title={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.descripcion} style={{
+  return <PortalLayout theme={t} navItems={reclutadorNav} user={currentUser} pageTitle="Dashboard" notifications={stats[3].value} headerActions={<button type="button" onClick={openModal} disabled={!empresaAprobada} aria-label={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.titulo} title={empresaAprobada ? 'Nueva vacante' : avisoEmpresa.descripcion} style={{
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
@@ -357,12 +362,12 @@ export default function ReclutadorDashboard() {
           color: t.textSecondary,
           fontSize: '13px',
           fontWeight: 600
-        }}>
+        }} role="status" aria-live="polite">
               Cargando tu dashboard...
             </div>
           </Card>}
 
-        {error && <div style={{
+        {error && <div role="alert" style={{
         padding: '14px 20px',
         borderRadius: '14px',
         background: 'rgba(239,68,68,0.10)',
@@ -376,7 +381,7 @@ export default function ReclutadorDashboard() {
         gap: '12px'
       }}>
             <span>No se pudo cargar tu dashboard: {error}</span>
-            <button onClick={refetch} style={{
+            <button type="button" onClick={refetch} style={{
           border: '1px solid rgba(239,68,68,0.35)',
           background: t.bgSurface,
           color: '#fca5a5',
@@ -427,7 +432,7 @@ export default function ReclutadorDashboard() {
                 </p>
               </div>
             </div>
-            <button onClick={() => navigate('/reclutador/empresa')} style={{
+            <button type="button" onClick={() => navigate('/reclutador/empresa')} style={{
           background: avisoEmpresa.estado === 'rechazada' ? '#ef4444' : avisoEmpresa.estado === 'suspendida' ? '#64748b' : '#f59e0b',
           border: 'none',
           borderRadius: '8px',

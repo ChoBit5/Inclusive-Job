@@ -143,8 +143,8 @@ export default function EmpresaDetalle() {
     }
   };
   if (loading) {
-    return <div className="flex min-h-[320px] items-center justify-center">
-        <div className="w-9 h-9 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+    return <div role="status" aria-live="polite" className="flex min-h-[320px] items-center justify-center">
+        <div className="w-9 h-9 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
       </div>;
   }
   if (error || !empresa) {
@@ -153,12 +153,12 @@ export default function EmpresaDetalle() {
           <ArrowLeft size={16} />
           Volver
         </Button>
-        <ErrorBanner message={error || 'No se encontró la empresa solicitada.'} />
+        <div role="alert"><ErrorBanner message={error || 'No se encontró la empresa solicitada.'} /></div>
       </div>;
   }
   return <div className="space-y-6">
       <div>
-        <button onClick={() => navigate('/admin/empresas')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-4 transition-colors" aria-label="Volver a empresas">
+        <button type="button" onClick={() => navigate('/admin/empresas')} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-4 transition-colors" aria-label="Volver a empresas">
           <ArrowLeft size={16} />
           Volver a Empresas
         </button>
@@ -277,7 +277,12 @@ export default function EmpresaDetalle() {
             </h2>
 
             {vacantes.length === 0 ? <p className="text-slate-500 text-sm">No hay vacantes recientes para esta empresa.</p> : <ul className="space-y-2" role="list">
-                {vacantes.map(vacante => <li key={vacante.id_vacante} className="flex items-center justify-between gap-3 bg-slate-700/30 rounded-xl px-3 py-2.5 cursor-pointer hover:bg-slate-700/50 transition-colors" onClick={() => navigate(`/admin/vacantes/${vacante.id_vacante}`)}>
+                {vacantes.map(vacante => <li key={vacante.id_vacante} role="link" tabIndex={0} aria-label={`Ver vacante ${vacante.titulo_puesto}`} className="flex items-center justify-between gap-3 bg-slate-700/30 rounded-xl px-3 py-2.5 cursor-pointer hover:bg-slate-700/50 transition-colors" onClick={() => navigate(`/admin/vacantes/${vacante.id_vacante}`)} onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(`/admin/vacantes/${vacante.id_vacante}`);
+                  }
+                }}>
                     <div className="min-w-0">
                       <p className="text-white text-sm font-medium truncate">{vacante.titulo_puesto}</p>
                       <p className="text-slate-400 text-xs truncate">
@@ -302,7 +307,8 @@ export default function EmpresaDetalle() {
           Ingresa el motivo:
         </p>
 
-        <textarea value={motivoRechazo} onChange={event => setMotivoRechazo(event.target.value)} rows={3} placeholder="Ej: La información proporcionada es incompleta o inválida..." className="w-full bg-slate-700 border border-slate-600 text-white text-sm
+        <label htmlFor="rechazo-motivo" className="sr-only">Motivo del rechazo</label>
+        <textarea id="rechazo-motivo" value={motivoRechazo} onChange={event => setMotivoRechazo(event.target.value)} rows={3} placeholder="Ej: La información proporcionada es incompleta o inválida..." className="w-full bg-slate-700 border border-slate-600 text-white text-sm
                      rounded-lg px-3 py-2 outline-none focus:border-violet-500
                      transition-colors placeholder-slate-500 resize-none" />
 

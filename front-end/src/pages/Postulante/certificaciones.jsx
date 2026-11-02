@@ -92,7 +92,7 @@ function SectionHead({
         color: t.textMuted
       }}>{sub}</p>}
       </div>
-      {action && <button type="button" onClick={onAction} style={{
+      {action && <button type="button" className="ij-postulant-link-btn" onClick={onAction} style={{
       display: 'flex',
       gap: '4px',
       alignItems: 'center',
@@ -112,7 +112,7 @@ function ActionBtn({
   onClick,
   disabled = false
 }) {
-  return <button type="button" className="ij-action-btn" onClick={onClick} disabled={disabled} style={{
+  return <button type="button" className="ij-action-btn ij-postulant-btn" onClick={onClick} disabled={disabled} style={{
     display: 'flex',
     alignItems: 'center',
     gap: '7px',
@@ -137,7 +137,7 @@ function AiGradientBtn({
   onClick,
   disabled = false
 }) {
-  return <button type="button" className="ij-ai-btn" onClick={onClick} disabled={disabled} style={{
+  return <button type="button" className="ij-ai-btn ij-postulant-btn" onClick={onClick} disabled={disabled} style={{
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -481,6 +481,7 @@ export default function PostulanteDashboard() {
         @media(max-width:560px){
           .cert-btns { width:100%; }
           .cert-btns .ij-action-btn { flex:1 1 100%; }
+          .ij-float-ai { display:none !important; }
         }
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes ij-soft-float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-3px); } }
@@ -534,9 +535,11 @@ export default function PostulanteDashboard() {
           }}>Perfil profesional</p>
             <h1 style={{
             margin: '10px 0',
-            fontSize: '44px',
+            fontSize: 'clamp(32px, 9vw, 44px)',
             fontWeight: 800,
-            lineHeight: 1.1
+            lineHeight: 1.1,
+            overflowWrap: 'normal',
+            wordBreak: 'normal'
           }}>CV y capacitaciones</h1>
             <p style={{
             maxWidth: '700px',
@@ -559,7 +562,7 @@ export default function PostulanteDashboard() {
             padding: '20px',
             borderBottom: `1px solid ${t.border}`
           }}>
-              {tieneCV === null && !cvError && <div style={{
+              {tieneCV === null && !cvError && <div role="status" aria-live="polite" style={{
               height: '420px',
               display: 'flex',
               alignItems: 'center',
@@ -620,7 +623,7 @@ export default function PostulanteDashboard() {
               borderRadius: '12px',
               background: '#f8f9fb'
             }} />}
-              {cvError && tieneCV === true && <p style={{ margin: '12px 0 0', color: '#991b1b', fontSize: '12px', textAlign: 'center' }}>{cvError}</p>}
+              {cvError && tieneCV === true && <p role="alert" style={{ margin: '12px 0 0', color: '#991b1b', fontSize: '12px', textAlign: 'center' }}>{cvError}</p>}
              </div>
             <input ref={fileInputRef} type="file" accept="application/pdf" style={{
             display: 'none'
@@ -645,8 +648,8 @@ export default function PostulanteDashboard() {
           
           <Card>
             <SectionHead title="Mis certificaciones" sub={certificaciones ? `${certificaciones.length} registradas` : ''} action="Añadir" onAction={abrirNuevaCert} />
-            {certificacionesError && <p style={{ margin: '14px 20px 0', color: '#991b1b', fontSize: '12px' }}>{certificacionesError}</p>}
-            {certificaciones === null && <div style={{
+            {certificacionesError && <p role="alert" style={{ margin: '14px 20px 0', color: '#991b1b', fontSize: '12px' }}>{certificacionesError}</p>}
+            {certificaciones === null && <div role="status" aria-live="polite" style={{
             height: '120px',
             display: 'flex',
             alignItems: 'center',
@@ -721,7 +724,7 @@ export default function PostulanteDashboard() {
               </ul>}
           </Card>
 
-          {historialError && <p style={{ margin: '16px 0 0', color: '#991b1b', fontSize: '12px' }}>{historialError}</p>}
+          {historialError && <p role="alert" style={{ margin: '16px 0 0', color: '#991b1b', fontSize: '12px' }}>{historialError}</p>}
         </div>
 
         {(analizandoCV || analisisCV) && <div style={{
@@ -1016,7 +1019,7 @@ export default function PostulanteDashboard() {
           </div>}
       </div>
 
-      <button type="button" className="ij-float-ai" onClick={analizarCvActual} disabled={cvActionDisabled} aria-label="Mejorar CV con IA" style={{
+      <button type="button" className="ij-float-ai ij-postulant-btn" onClick={analizarCvActual} disabled={cvActionDisabled} aria-label="Mejorar CV con IA" style={{
       position: 'fixed',
       right: 96,
       bottom: 30,
@@ -1195,7 +1198,7 @@ export default function PostulanteDashboard() {
                 fontSize: '14px',
                 cursor: 'pointer'
               }} />
-                  <button type="button" onClick={abrirCalendarioCertificacion} aria-label="Abrir calendario" title="Abrir calendario" style={{
+                  <button type="button" className="ij-postulant-icon-btn" onClick={abrirCalendarioCertificacion} aria-label="Abrir calendario" title="Abrir calendario" style={{
                 position: 'absolute',
                 right: '10px',
                 top: '50%',
@@ -1272,7 +1275,7 @@ export default function PostulanteDashboard() {
           borderTop: `1px solid ${t.border}`,
           background: '#fafafa'
         }}>
-              <button type="button" disabled={guardandoCert} onClick={() => setModalCert(false)} style={{
+              <button type="button" className="ij-postulant-btn" disabled={guardandoCert} onClick={() => setModalCert(false)} style={{
             height: '46px',
             padding: '0 18px',
             borderRadius: '14px',
@@ -1283,7 +1286,7 @@ export default function PostulanteDashboard() {
           }}>
                 Cancelar
               </button>
-              <button type="button" disabled={guardandoCert} onClick={confirmarGuardarCertificacion} style={{
+              <button type="button" className="ij-postulant-btn" disabled={guardandoCert} onClick={confirmarGuardarCertificacion} style={{
             height: '46px',
             padding: '0 20px',
             border: 'none',

@@ -36,8 +36,8 @@ export function Button({
     md: 'px-4 py-2 text-sm',
     lg: 'px-5 py-2.5 text-base'
   };
-  return <button disabled={disabled || loading} className={`
-        inline-flex items-center justify-center gap-2 font-medium rounded-lg border
+  return <button type="button" disabled={disabled || loading} aria-busy={loading || undefined} className={`
+        inline-flex min-h-11 items-center justify-center gap-2 font-medium rounded-lg border
         transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed
         ${BTN_VARIANTS[variant]} ${sizes[size]} ${className}
       `} {...props}>
@@ -70,7 +70,7 @@ export function StatCard({
             {trend > 0 ? '+' : ''}{trend}%
           </span>}
       </div>
-      {loading ? <div className="animate-pulse space-y-2">
+      {loading ? <div role="status" aria-live="polite" aria-label={`Cargando ${label}`} className="animate-pulse space-y-2">
           <div className="h-7 w-16 bg-slate-700 rounded" />
           <div className="h-4 w-24 bg-slate-700 rounded" />
         </div> : <>
@@ -96,7 +96,7 @@ export function FilterTabs({
   onChange
 }) {
   return <div className="flex flex-wrap gap-1 bg-slate-800/60 p-1 rounded-lg border border-slate-700/50" role="group" aria-label="Filtros">
-      {options.map(opt => <button key={opt.value} onClick={() => onChange(opt.value)} aria-pressed={value === opt.value} className={`
+      {options.map(opt => <button type="button" key={opt.value} onClick={() => onChange(opt.value)} aria-pressed={value === opt.value} className={`
             px-3 py-1.5 text-sm rounded-md font-medium transition-all
             ${value === opt.value ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-700'}
           `}>
@@ -126,7 +126,7 @@ export function EmptyState({
   description,
   action
 }) {
-  return <div className="flex flex-col items-center justify-center py-16 text-center">
+  return <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-16 text-center">
       {Icon && <div className="w-14 h-14 rounded-2xl bg-slate-700/50 flex items-center justify-center mb-4">
           <Icon size={24} className="text-slate-500" />
         </div>}
@@ -150,9 +150,10 @@ export function Select({
   label,
   className = ''
 }) {
+  const id = `admin-select-${label?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'field'}`;
   return <div className={className}>
-      {label && <label className="block text-xs text-slate-400 mb-1">{label}</label>}
-      <select value={value} onChange={e => onChange(e.target.value)} className="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-2 outline-none focus:border-violet-500 transition-colors w-full" aria-label={label}>
+      {label && <label htmlFor={id} className="block text-xs text-slate-400 mb-1">{label}</label>}
+      <select id={id} value={value} onChange={e => onChange(e.target.value)} className="min-h-11 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-2 outline-none focus:border-violet-500 transition-colors w-full">
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>;

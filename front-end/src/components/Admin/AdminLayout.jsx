@@ -44,7 +44,7 @@ export default function AdminLayout() {
         <Header onMobileMenuOpen={() => setMobileOpen(true)} sidebarCollapsed={collapsed} user={adminUser} />
 
         
-        <main id="main-content" className="flex-1 p-4 sm:p-6 w-full overflow-x-hidden" role="main" aria-label="Contenido principal">
+        <main id="main-content" className="ij-admin-main flex-1 p-4 sm:p-6 w-full overflow-x-hidden" role="main" aria-label="Contenido principal">
           <Outlet />
         </main>
       </div>

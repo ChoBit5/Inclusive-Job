@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/Navitems';
 import { usePostulacionesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { useFocusTrap } from '../../components/useFocusTrap.js';
 import {
   filtrarPostulaciones,
   formatFecha,
@@ -89,12 +90,15 @@ function ModalPostulacion({
   onDespostular,
   retirando = false,
 }) {
+  const dialogRef = useRef(null);
+  const titleId = useId();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+  useFocusTrap({ open: Boolean(postulacion), containerRef: dialogRef, onClose });
   if (!postulacion) return null;
   const estadoInfo = getEstadoPostulacion(postulacion.estado);
   const s = ESTADO_STYLE[estadoInfo.style];
@@ -108,7 +112,7 @@ function ModalPostulacion({
     justifyContent: 'center',
     padding: '20px'
   }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={e => e.stopPropagation()} style={{
       background: '#fff',
       borderRadius: '20px',
       position: 'relative',
@@ -156,7 +160,7 @@ function ModalPostulacion({
               <div style={{
               flex: 1
             }}>
-                <h2 style={{
+                <h2 id={titleId} style={{
                 margin: '0 0 3px',
                 fontSize: '19px',
                 fontWeight: 500,
@@ -177,7 +181,7 @@ function ModalPostulacion({
                 </p>
               </div>
             </div>
-            <button onClick={onClose} style={{
+            <button type="button" className="ij-postulant-icon-btn" onClick={onClose} aria-label="Cerrar detalle de postulación" style={{
             width: '30px',
             height: '30px',
             borderRadius: '8px',
@@ -480,7 +484,7 @@ function ModalPostulacion({
         flexShrink: 0,
         background: '#fff'
       }}>
-          <button onClick={() => onDespostular(postulacion.id)} disabled={retirando} style={{
+          <button className="ij-postulant-btn" onClick={() => onDespostular(postulacion.id)} disabled={retirando} style={{
           background: '#fff5f5',
           color: '#dc2626',
           border: '1px solid #fecaca',
@@ -580,8 +584,11 @@ export default function PostulanteDashboard() {
         }}>Seguimiento de procesos</p>
           <h1 style={{
           margin: 0,
-          fontSize: '44px',
-          fontWeight: 800
+          fontSize: 'clamp(32px, 9vw, 44px)',
+          fontWeight: 800,
+          lineHeight: 1.1,
+          overflowWrap: 'normal',
+          wordBreak: 'normal'
         }}>Estado de tus postulaciones</h1>
           <p style={{
           marginTop: '16px',
@@ -608,7 +615,7 @@ export default function PostulanteDashboard() {
           }} />
           </div>
 
-          {loading ? <div style={{
+          {loading ? <div role="status" aria-live="polite" style={{
           padding: '30px'
         }}>Cargando postulaciones...</div> : error ? <div role="alert" style={{
           padding: '40px',
@@ -616,7 +623,7 @@ export default function PostulanteDashboard() {
           color: '#b91c1c'
         }}>
               <p style={{ margin: '0 0 14px' }}>{error}</p>
-              <button type="button" onClick={cargarPostulaciones} style={{
+              <button type="button" className="ij-postulant-btn" onClick={cargarPostulaciones} style={{
                 border: `1px solid ${t.accentBorder}`,
                 background: t.accentSoft,
                 color: t.accent,
@@ -699,7 +706,7 @@ export default function PostulanteDashboard() {
                     gap: '8px'
                   }}>
                           
-                          <button onClick={() => setPostulacionSeleccionada(p)} style={{
+                          <button className="ij-postulant-icon-btn" aria-label={`Ver detalles de ${p.vacante}`} onClick={() => setPostulacionSeleccionada(p)} style={{
                       width: '40px',
                       height: '40px',
                       border: `1px solid ${t.border}`,
@@ -709,7 +716,7 @@ export default function PostulanteDashboard() {
                     }}>
                             <Eye size={16} color={t.accent} />
                           </button>
-                          <button onClick={() => despostular(p.id)} style={{
+                          <button className="ij-postulant-icon-btn" aria-label={`Despostularme de ${p.vacante}`} onClick={() => despostular(p.id)} style={{
                       width: '40px',
                       height: '40px',
                       border: '1px solid #fecaca',

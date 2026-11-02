@@ -21,7 +21,7 @@ export default function Pagination({
       </p>
 
       <div className="flex items-center gap-1">
-        <button onClick={() => onPageChange(page - 1)} disabled={page === 1} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Página anterior">
+        <button type="button" onClick={() => onPageChange(page - 1)} disabled={page === 1} className="ij-touch-target p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Página anterior">
           <ChevronLeft size={16} />
         </button>
 
@@ -37,7 +37,7 @@ export default function Pagination({
             <PageBtn n={totalPages} current={page} onClick={onPageChange} />
           </>}
 
-        <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Página siguiente">
+        <button type="button" onClick={() => onPageChange(page + 1)} disabled={page === totalPages} className="ij-touch-target p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label="Página siguiente">
           <ChevronRight size={16} />
         </button>
       </div>
@@ -49,7 +49,7 @@ function PageBtn({
   onClick
 }) {
   const isActive = n === current;
-  return <button onClick={() => onClick(n)} aria-current={isActive ? 'page' : undefined} className={`
+  return <button type="button" onClick={() => onClick(n)} aria-current={isActive ? 'page' : undefined} className={`
         w-8 h-8 rounded-lg text-sm font-medium transition-colors
         ${isActive ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}
       `}>

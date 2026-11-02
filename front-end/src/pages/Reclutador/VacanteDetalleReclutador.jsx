@@ -92,8 +92,8 @@ export default function VacanteDetalleReclutador() {
   };
   if (loading) {
     return <PortalLayout theme={t} navItems={reclutadorNav}>
-        <div className="flex min-h-[320px] items-center justify-center">
-          <div className="w-9 h-9 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <div role="status" aria-live="polite" className="flex min-h-[320px] items-center justify-center">
+          <div className="w-9 h-9 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         </div>
       </PortalLayout>;
   }
@@ -101,13 +101,13 @@ export default function VacanteDetalleReclutador() {
     return <PortalLayout theme={t} navItems={reclutadorNav}>
         <div className="space-y-4">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Volver</Button>
-          <ErrorBanner message={error || 'Vacante no encontrada.'} />
+          <div role="alert"><ErrorBanner message={error || 'Vacante no encontrada.'} /></div>
         </div>
       </PortalLayout>;
   }
   return <PortalLayout theme={t} navItems={reclutadorNav}>
       <div className="space-y-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
+        <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
           <ArrowLeft size={16} /> Volver
         </button>
 

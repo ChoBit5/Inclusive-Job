@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Verificacion from "./Verificacion";
 import { errorAlert, successAlert } from "../components/Admin/alerts";
+import GoogleMark from "../components/GoogleMark.jsx";
 import { useGoogleDomain } from "../hooks/Google/useDomain.js";
 import { GoogleLogin } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
@@ -110,11 +111,7 @@ const PasswordModal = ({
         ...ms.iconRing,
         borderColor: theme.border
       }}>
-          <img src="/logo.webp" alt="Google" style={{
-          width: 34,
-          height: 34,
-          objectFit: "contain"
-        }} />
+          <GoogleMark size={34} />
         </div>
 
         <h2 style={ms.title}>Completa tu registro</h2>
@@ -182,7 +179,7 @@ const ms = {
     display: "flex",
     flexDirection: "column",
     gap: 14,
-    fontFamily: "Poppins, sans-serif"
+    fontFamily: "var(--ij-font-sans)"
   },
   closeBtn: {
     position: "absolute",
@@ -237,7 +234,7 @@ const ms = {
     background: "rgba(255,255,255,0.9)",
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     transition: "border-color 0.2s",
-    fontFamily: "Poppins, sans-serif"
+    fontFamily: "var(--ij-font-sans)"
   },
   eyeBtn: {
     position: "absolute",
@@ -269,7 +266,7 @@ const ms = {
     fontWeight: 700,
     fontSize: 16,
     cursor: "pointer",
-    fontFamily: "Poppins, sans-serif",
+    fontFamily: "var(--ij-font-sans)",
     boxShadow: "0 10px 25px rgba(37,99,235,0.22)"
   }
 };
@@ -495,11 +492,10 @@ const Registro = () => {
       }}>
 
           
-          <div style={styles.logoRow}>
-            <div style={styles.logoWrapper}>
-              <div style={styles.logoGlow} />
-              <img src="/logo.webp" alt="InclusiJob IA" style={styles.logo} />
-            </div>
+            <div style={{
+            ...styles.logoRow,
+            justifyContent: "flex-end"
+          }}>
             <a href="/" style={styles.backBtn}>← Inicio</a>
           </div>
 
@@ -512,19 +508,23 @@ const Registro = () => {
 
           
           <form style={styles.form} onSubmit={handleSubmit}>
-            <input type="text" name="nombres" placeholder="Nombre completo" maxLength={60} value={form.nombres} onChange={handleRegistroChange} style={{
+            <label htmlFor="registro-nombres" className="sr-only">Nombre completo</label>
+            <input id="registro-nombres" type="text" name="nombres" placeholder="Nombre completo" maxLength={60} value={form.nombres} onChange={handleRegistroChange} style={{
             ...styles.input,
             border: `2px solid ${theme.border}`
           }} />
-            <input type="email" autoComplete="email" name="correo" placeholder="Correo electrónico" maxLength={100} value={form.correo} onChange={handleRegistroChange} style={{
+            <label htmlFor="registro-correo" className="sr-only">Correo electrónico</label>
+            <input id="registro-correo" type="email" autoComplete="email" name="correo" placeholder="Correo electrónico" maxLength={100} value={form.correo} onChange={handleRegistroChange} style={{
             ...styles.input,
             border: `2px solid ${theme.border}`
           }} />
-            <input type="password" autoComplete="new-password" name="password" placeholder="Contraseña" maxLength={128} value={form.password} onChange={handleRegistroChange} style={{
+            <label htmlFor="registro-password" className="sr-only">Contraseña</label>
+            <input id="registro-password" type="password" autoComplete="new-password" name="password" placeholder="Contraseña" maxLength={128} value={form.password} onChange={handleRegistroChange} style={{
             ...styles.input,
             border: `2px solid ${theme.border}`
           }} />
-            <select name="lada" aria-label="LADA" value={form.lada} onChange={handleRegistroChange} style={{
+            <label htmlFor="registro-lada" className="sr-only">LADA</label>
+            <select id="registro-lada" name="lada" aria-label="LADA" value={form.lada} onChange={handleRegistroChange} style={{
             ...styles.input,
             border: `2px solid ${theme.border}`
           }}>
@@ -532,7 +532,8 @@ const Registro = () => {
                   {pais.flag} {pais.code} · {pais.name}
                 </option>)}
             </select>
-            <input type="tel" inputMode="numeric" autoComplete="tel-national" name="telefono" placeholder="Teléfono" maxLength={10} value={form.telefono} onChange={handleRegistroChange} style={{
+            <label htmlFor="registro-telefono" className="sr-only">Teléfono</label>
+            <input id="registro-telefono" type="tel" inputMode="numeric" autoComplete="tel-national" name="telefono" placeholder="Teléfono" maxLength={10} value={form.telefono} onChange={handleRegistroChange} style={{
             ...styles.input,
             border: `2px solid ${theme.border}`
           }} />
@@ -580,10 +581,7 @@ const Registro = () => {
             ...styles.googleBtn,
             border: `2px solid ${theme.border}`
           }}>
-              <img src="/logo.webp" alt="Google" style={{
-              width: 24,
-              height: 24
-            }} />
+              <GoogleMark size={24} />
               Continuar con Google
             </button>
 
@@ -712,7 +710,7 @@ const styles = {
     minHeight: "100vh",
     display: "flex",
     overflow: "hidden",
-    fontFamily: "Poppins, sans-serif"
+    fontFamily: "var(--ij-font-sans)"
   },
   leftSide: {
     display: "flex",

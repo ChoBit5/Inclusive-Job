@@ -19,6 +19,10 @@ function useCountUp(end, duration = 1200) {
   const [v, setV] = useState(0);
   const raf = useRef(null);
   useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setV(end);
+      return undefined;
+    }
     const s = performance.now();
     const step = now => {
       const p = Math.min((now - s) / duration, 1);
@@ -152,7 +156,7 @@ function SectionHead({
         color: t.textMuted
       }}>{sub}</p>}
       </div>
-      {action && <button onClick={onAction} style={{
+      {action && <button className="ij-postulant-link-btn" onClick={onAction} style={{
       display: 'flex',
       alignItems: 'center',
       gap: '4px',
@@ -253,7 +257,7 @@ export default function PostulanteDashboard() {
   const firstName = (dashboardUser.nombre || 'Postulante').split(' ')[0];
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-  return <PortalLayout theme={t} navItems={postulantNav} user={dashboardUser} pageTitle="Inicio" notifications={stats[3].value} headerActions={<button onClick={() => navigate('/postulante/vacantes')} style={{
+  return <PortalLayout theme={t} navItems={postulantNav} user={dashboardUser} pageTitle="Inicio" notifications={stats[3].value} headerActions={<button className="ij-postulant-btn" onClick={() => navigate('/postulante/vacantes')} style={{
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
@@ -306,12 +310,12 @@ export default function PostulanteDashboard() {
           color: t.textSecondary,
           fontSize: '13px',
           fontWeight: 600
-        }}>
+        }} role="status" aria-live="polite">
               Cargando tu dashboard...
             </div>
           </Card>}
 
-        {error && <div style={{
+        {error && <div role="alert" aria-live="assertive" style={{
         padding: '14px 20px',
         borderRadius: '14px',
         background: '#fef2f2',
@@ -325,7 +329,7 @@ export default function PostulanteDashboard() {
         gap: '12px'
       }}>
             <span>No se pudo cargar tu dashboard: {error}</span>
-            <button onClick={refetch} style={{
+            <button type="button" className="ij-postulant-btn" onClick={refetch} style={{
           border: '1px solid #fca5a5',
           background: '#fff',
           color: '#991b1b',
@@ -584,7 +588,13 @@ export default function PostulanteDashboard() {
                 {checklist.map(item => {
                 const action = accionChecklistPostulante(item);
                 const clickable = Boolean(action);
-                return <li key={item.id} onClick={() => clickable && navigate(action.path, action.state ? { state: action.state } : undefined)} style={{
+                const goToAction = () => clickable && navigate(action.path, action.state ? { state: action.state } : undefined);
+                return <li key={item.id} role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined} aria-label={clickable ? `Completar ${item.label}` : undefined} onClick={goToAction} onKeyDown={e => {
+                if (clickable && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  goToAction();
+                }
+              }} style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -898,7 +908,7 @@ export default function PostulanteDashboard() {
           icon: Bell,
           path: '/postulante/reportes',
           color: '#ef4444'
-        }].map(a => <button key={a.label} onClick={() => navigate(a.path)} style={{
+        }].map(a => <button className="ij-postulant-card-action" key={a.label} onClick={() => navigate(a.path)} style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',

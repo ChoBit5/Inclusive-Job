@@ -24,7 +24,7 @@ export default function PortalLayout({
     width: '100%',
     background: t.bg,
     color: t.textPrimary,
-    fontFamily: "'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif"
+    fontFamily: 'var(--ij-font-sans)'
   }}>
       <style>{`
         * { box-sizing: border-box; }
@@ -49,7 +49,7 @@ export default function PortalLayout({
     }} className={collapsed ? 'lg:!pl-[68px]' : 'lg:!pl-[256px]'}>
         <PortalHeader theme={t} onMobileMenuOpen={() => setMobileOpen(true)} title={pageTitle} actions={headerActions} notifications={notifications} />
 
-        <main id="main-content" role="main" aria-label="Contenido principal" style={{
+        <main id="main-content" className="ij-portal-main" role="main" aria-label="Contenido principal" style={{
         flex: 1,
         padding: '24px 20px',
         width: '100%',

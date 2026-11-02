@@ -14,12 +14,18 @@ export default function Table({
     const newDir = sortKey === key && sortDir === 'asc' ? 'desc' : 'asc';
     onSort(key, newDir);
   };
-  return <div className="overflow-x-auto rounded-xl border border-slate-700/50 bg-slate-800/50">
+  return <div className="overflow-x-auto rounded-xl border border-slate-700/50 bg-slate-800/50" aria-busy={loading || undefined}>
+      {loading && <p role="status" aria-live="polite" className="sr-only">Cargando tabla</p>}
       <table className="w-full text-sm" role="grid">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr className="border-b border-slate-700/50">
-            {columns.map(col => <th key={col.key} scope="col" className={`
+            {columns.map(col => <th key={col.key} scope="col" tabIndex={col.sortable ? 0 : undefined} onKeyDown={col.sortable ? event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleSort(col.key);
+              }
+            } : undefined} className={`
                   px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider
                   ${col.sortable ? 'cursor-pointer select-none hover:text-white' : ''}
                   ${col.className || ''}
@@ -41,7 +47,7 @@ export default function Table({
                     <div className="h-4 bg-slate-700 rounded w-3/4" />
                   </td>)}
               </tr>) : data.length === 0 ? <tr>
-              <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500">
+              <td colSpan={columns.length} role="status" className="px-4 py-12 text-center text-slate-500">
                 {emptyMessage}
               </td>
             </tr> : data.map((row, rowIdx) => <tr key={row.id || rowIdx} className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">

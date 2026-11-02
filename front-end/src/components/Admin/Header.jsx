@@ -42,7 +42,7 @@ export default function Header({
                        flex items-center gap-4 px-4">
 
       
-      <button onClick={onMobileMenuOpen} className="lg:hidden flex-shrink-0 text-slate-400 hover:text-white
+      <button onClick={onMobileMenuOpen} className="ij-touch-target lg:hidden flex-shrink-0 text-slate-400 hover:text-white
                    p-1.5 rounded-lg hover:bg-slate-800 transition-colors" aria-label="Abrir menú de navegación">
         <Menu size={20} />
       </button>

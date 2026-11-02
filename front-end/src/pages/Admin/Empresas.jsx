@@ -203,7 +203,7 @@ export default function Empresas() {
   }];
   return <div className="space-y-5 w-full">
       <PageHeader title="Gestión de Empresas" description="Administra y valida las empresas registradas en la plataforma" action={<div className="flex items-center gap-3">
-            <span className="text-slate-400 text-sm flex items-center gap-1">
+            <span role="status" aria-live="polite" className="text-slate-400 text-sm flex items-center gap-1">
               <Building2 size={15} />
               {total} empresas
             </span>
@@ -240,7 +240,8 @@ export default function Empresas() {
           Ingresa el motivo:
         </p>
 
-        <textarea value={motivoRechazo} onChange={event => setMotivoRechazo(event.target.value)} rows={3} placeholder="Ej: La información proporcionada es incompleta o inválida..." className="w-full bg-slate-700 border border-slate-600 text-white text-sm
+        <label htmlFor="rechazo-motivo" className="sr-only">Motivo del rechazo</label>
+        <textarea id="rechazo-motivo" value={motivoRechazo} onChange={event => setMotivoRechazo(event.target.value)} rows={3} placeholder="Ej: La información proporcionada es incompleta o inválida..." className="w-full bg-slate-700 border border-slate-600 text-white text-sm
                      rounded-lg px-3 py-2 outline-none focus:border-violet-500
                      transition-colors placeholder-slate-500 resize-none" />
 

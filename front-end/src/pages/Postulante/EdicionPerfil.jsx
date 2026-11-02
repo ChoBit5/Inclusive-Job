@@ -259,7 +259,7 @@ export default function PerfilPostulante() {
     nombre: "…",
     rol: ""
   }} pageTitle="Mi Perfil">
-      <div style={{
+      <div role="status" aria-live="polite" style={{
       textAlign: "center",
       padding: "40px 0",
       color: t.textSecondary
@@ -269,7 +269,7 @@ export default function PerfilPostulante() {
     nombre: "Error",
     rol: ""
   }} pageTitle="Mi Perfil">
-      <div style={{
+      <div role="alert" aria-live="assertive" style={{
       textAlign: "center",
       padding: "40px 0",
       color: "#ef4444"
@@ -293,7 +293,7 @@ export default function PerfilPostulante() {
     const key = String(idOrName);
     return catalogoDiscapacidades.find(op => op.id === key)?.nombre || key;
   };
-  return <PortalLayout theme={t} navItems={postulantNav} user={user} pageTitle="Mi Perfil" notifications={0} headerActions={<button ref={editRef} onClick={abrir} aria-label={`Editar perfil de ${perfil.nombre}`} aria-haspopup="dialog" style={{
+  return <PortalLayout theme={t} navItems={postulantNav} user={user} pageTitle="Mi Perfil" notifications={0} headerActions={<button className="ij-postulant-btn" ref={editRef} onClick={abrir} aria-label={`Editar perfil de ${perfil.nombre}`} aria-haspopup="dialog" style={{
     display: "flex",
     alignItems: "center",
     gap: "6px",
@@ -621,7 +621,7 @@ export default function PerfilPostulante() {
             margin: 0,
             outline: "none"
           }}>Editar perfil</h2>
-              <button onClick={cerrar} disabled={saving} aria-label="Cerrar modal" style={{
+              <button className="ij-postulant-icon-btn" onClick={cerrar} disabled={saving} aria-label="Cerrar modal" style={{
             background: "transparent",
             border: "none",
             fontSize: "24px",
@@ -643,7 +643,7 @@ export default function PerfilPostulante() {
           borderBottom: `1px solid ${t.border}`,
           flexShrink: 0
         }}>
-              {TABS.map(tabKey => <button key={tabKey} role="tab" aria-selected={tab === tabKey} onClick={() => setTab(tabKey)} onKeyDown={e => {
+              {TABS.map(tabKey => <button className="ij-postulant-tab" key={tabKey} role="tab" aria-selected={tab === tabKey} onClick={() => setTab(tabKey)} onKeyDown={e => {
             const i = TABS.indexOf(tabKey);
             if (e.key === "ArrowRight") setTab(TABS[(i + 1) % TABS.length]);else if (e.key === "ArrowLeft") setTab(TABS[(i - 1 + TABS.length) % TABS.length]);
           }} style={{
@@ -710,7 +710,7 @@ export default function PerfilPostulante() {
                 }} /> : getInitials(`${draft.nombres} ${draft.apellidos}`)}
                     </div>
                     <div>
-                      <button type="button" onClick={() => fotoInputRef.current?.click()} style={{
+                      <button type="button" className="ij-postulant-choice" onClick={() => fotoInputRef.current?.click()} style={{
                   background: t.accentSoft,
                   border: `1px solid ${t.accentBorder}`,
                   borderRadius: "8px",
@@ -727,7 +727,7 @@ export default function PerfilPostulante() {
                   color: t.textMuted,
                   margin: "4px 0 0"
                 }}>JPG, PNG o WEBP · máx 5 MB</p>
-                      {fotoPreview && <button type="button" onClick={() => {
+                      {fotoPreview && <button type="button" className="ij-postulant-icon-btn" onClick={() => {
                   setFotoFile(null);
                   setFotoPreview(null);
                 }} style={{
@@ -822,7 +822,7 @@ export default function PerfilPostulante() {
                 display: "flex",
                 gap: "8px"
               }}>
-                      <select value={selectedLada} onChange={handleLadaChange} style={{
+                      <select id="f-lada" aria-label="LADA" value={selectedLada} onChange={handleLadaChange} style={{
                   width: "112px",
                   border: `1px solid ${t.border}`,
                   borderRadius: "10px",
@@ -914,7 +914,7 @@ export default function PerfilPostulante() {
               alignItems: "center",
               gap: "8px"
             }}>
-                    <button type="button" role="checkbox" aria-checked={draft.esfuerzo} onClick={() => setDraft(d => ({
+                    <button type="button" className="ij-postulant-choice" role="checkbox" aria-checked={draft.esfuerzo} onClick={() => setDraft(d => ({
                 ...d,
                 esfuerzo: !d.esfuerzo
               }))} style={{
@@ -981,7 +981,7 @@ export default function PerfilPostulante() {
                 gap: "4px"
               }}>
                         {s}
-                        <button onClick={() => delSkill(i)} aria-label={`Quitar ${s}`} style={{
+                    <button className="ij-postulant-icon-btn" onClick={() => delSkill(i)} aria-label={`Quitar ${s}`} style={{
                   background: "transparent",
                   border: "none",
                   color: t.accent,
@@ -1005,7 +1005,7 @@ export default function PerfilPostulante() {
                 color: t.textPrimary,
                 outline: "none"
               }} value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addSkill())} />
-                    <button onClick={addSkill} style={{
+                    <button className="ij-postulant-btn" onClick={addSkill} style={{
                 background: t.gradient,
                 border: "none",
                 borderRadius: "10px",
@@ -1062,7 +1062,7 @@ export default function PerfilPostulante() {
                         </p>}
                       {catalogoDiscapacidades.map(op => {
                   const sel = draft.discapacidad.includes(op.id);
-                  return <button key={op.id} type="button" role="checkbox" aria-checked={sel} onClick={() => togDisc(op.id)} style={{
+                  return <button className="ij-postulant-choice" key={op.id} type="button" role="checkbox" aria-checked={sel} onClick={() => togDisc(op.id)} style={{
                     textAlign: "left",
                     fontSize: "12px",
                     padding: "10px 12px",
@@ -1181,7 +1181,7 @@ export default function PerfilPostulante() {
             justifyContent: "flex-end",
             gap: "8px"
           }}>
-                <button onClick={cerrar} disabled={saving} style={{
+                <button className="ij-postulant-btn" onClick={cerrar} disabled={saving} style={{
               background: "transparent",
               border: `1px solid ${t.border}`,
               borderRadius: "10px",
@@ -1194,7 +1194,7 @@ export default function PerfilPostulante() {
             }}>
                   Cancelar
                 </button>
-                <button onClick={guardar} disabled={saving} aria-busy={saving} style={{
+                <button className="ij-postulant-btn" onClick={guardar} disabled={saving} aria-busy={saving} style={{
               background: t.gradient,
               border: "none",
               borderRadius: "10px",

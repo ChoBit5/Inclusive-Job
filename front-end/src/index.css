@@ -5,12 +5,131 @@
 @tailwind utilities;
 
 .swal2-container { z-index: 1000000 !important; }
+.swal2-popup :focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+.swal2-confirm, .swal2-cancel { min-width: 44px; min-height: 44px; border-radius: 10px !important; }
+.swal2-actions .swal2-confirm,
+.swal2-actions .swal2-confirm:hover,
+.swal2-actions .swal2-confirm:focus { color: #ffffff !important; }
+.swal2-actions .swal2-confirm { background-color: var(--swal2-confirm-button-background-color, #2563eb) !important; }
+.swal2-input, .swal2-textarea { min-height: 44px; }
+
+:root {
+  --ij-font-sans: Aptos, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --ij-space-1: 0.25rem;
+  --ij-space-2: 0.5rem;
+  --ij-space-3: 0.75rem;
+  --ij-space-4: 1rem;
+  --ij-space-6: 1.5rem;
+  --ij-radius-sm: 0.625rem;
+  --ij-radius-md: 0.875rem;
+  --ij-radius-lg: 1.25rem;
+  --ij-shadow-card: 0 14px 35px rgba(15, 23, 42, 0.12);
+  --ij-focus-ring: #1d4ed8;
+}
+
+.ij-touch-target { min-width: 44px; min-height: 44px; }
+
+.ij-postulant-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.ij-postulant-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+}
+
+.ij-postulant-btn:focus-visible {
+  outline: 3px solid var(--ij-focus-ring);
+  outline-offset: 3px;
+}
+
+.ij-postulant-btn:disabled {
+  cursor: not-allowed;
+}
+
+.ij-postulant-link-btn {
+  min-height: 44px;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+}
+
+.ij-postulant-link-btn:not(:disabled):hover,
+.ij-postulant-filter:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.ij-postulant-filter {
+  min-height: 44px;
+  padding: 10px 14px !important;
+}
+
+.ij-postulant-tab,
+.ij-postulant-choice,
+.ij-postulant-icon-btn {
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease, background-color 160ms ease;
+}
+
+.ij-postulant-tab {
+  min-height: 44px;
+}
+
+.ij-postulant-tab:not(:disabled):hover,
+.ij-postulant-choice:not(:disabled):hover,
+.ij-postulant-icon-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.ij-postulant-tab:focus-visible,
+.ij-postulant-choice:focus-visible,
+.ij-postulant-icon-btn:focus-visible {
+  outline: 3px solid var(--ij-focus-ring) !important;
+  outline-offset: 3px;
+}
+
+.ij-postulant-icon-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+}
+
+.ij-postulant-card-action {
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ij-postulant-btn { transition: none; }
+  .ij-postulant-btn:not(:disabled):hover,
+  .ij-postulant-link-btn:not(:disabled):hover,
+  .ij-postulant-filter:not(:disabled):hover,
+  .ij-postulant-tab:not(:disabled):hover,
+  .ij-postulant-choice:not(:disabled):hover,
+  .ij-postulant-icon-btn:not(:disabled):hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .ij-postulant-tab,
+  .ij-postulant-choice,
+  .ij-postulant-icon-btn { transition: none; }
+}
+
+@media (max-width: 480px) {
+  .ij-portal-main, .ij-admin-main { padding: 16px !important; }
+  .ij-portal-main h1, .ij-admin-main h1 { overflow-wrap: anywhere; }
+}
 
 @layer base {
   :root {
     color: #0f172a;
     background: #f8fafc;
-    font-family: Aptos, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    font-family: var(--ij-font-sans);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -35,6 +154,10 @@
   :focus-visible {
     outline: 3px solid #2563eb;
     outline-offset: 3px;
+  }
+
+  @media (forced-colors: active) {
+    :focus-visible { outline: 3px solid CanvasText; }
   }
 }
 

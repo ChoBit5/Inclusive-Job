@@ -33,7 +33,7 @@ function themedOptions(theme) {
       if (titleEl) titleEl.style.color = theme.textPrimary || '#0f172a';
       if (htmlEl) htmlEl.style.color = theme.textSecondary || theme.textMuted || '#475569';
       if (confirmButton) {
-        confirmButton.style.color = isLightTheme ? theme.textPrimary || '#0f172a' : '#ffffff';
+        confirmButton.style.color = '#ffffff';
         confirmButton.style.fontWeight = '800';
       }
       if (cancelButton) {
@@ -50,7 +50,7 @@ export async function confirmAction({
   title = '¿Estás seguro?',
   html = '',
   confirmText = 'Confirmar',
-  confirmColor = '#7c3aed',
+  confirmColor = null,
   cancelText = 'Cancelar',
   icon = 'warning',
   theme = null
@@ -61,11 +61,11 @@ export async function confirmAction({
     title,
     html,
     icon,
-    iconColor: theme?.accent || undefined,
+    iconColor: confirmColor || theme?.accent || undefined,
     showCancelButton: true,
     confirmButtonText: confirmText,
     cancelButtonText: cancelText,
-    confirmButtonColor: theme?.accentHover || theme?.accent || confirmColor,
+    confirmButtonColor: confirmColor || theme?.accentHover || theme?.accent || '#7c3aed',
     cancelButtonColor: theme?.name === 'postulante' ? theme.bgElevated || '#e0ecff' : theme?.textMuted || '#475569'
   });
   return result.isConfirmed;
@@ -79,7 +79,7 @@ export async function confirmTextareaAction({
   maxLength = 500,
   requiredMessage = 'Escribe una explicacion breve.',
   confirmText = 'Confirmar',
-  confirmColor = '#7c3aed',
+  confirmColor = null,
   cancelText = 'Cancelar',
   icon = 'warning',
   theme = null
@@ -90,7 +90,7 @@ export async function confirmTextareaAction({
     title,
     html,
     icon,
-    iconColor: theme?.accent || undefined,
+    iconColor: confirmColor || theme?.accent || undefined,
     input: 'textarea',
     inputLabel,
     inputPlaceholder,
@@ -102,7 +102,7 @@ export async function confirmTextareaAction({
     showCancelButton: true,
     confirmButtonText: confirmText,
     cancelButtonText: cancelText,
-    confirmButtonColor: theme?.accentHover || theme?.accent || confirmColor,
+    confirmButtonColor: confirmColor || theme?.accentHover || theme?.accent || '#7c3aed',
     cancelButtonColor: theme?.name === 'postulante' ? theme.bgElevated || '#e0ecff' : theme?.textMuted || '#475569',
     didOpen: popup => {
       themedOptions(theme).didOpen?.(popup);
@@ -166,9 +166,11 @@ export async function confirmLogout(theme = null) {
   });
 }
 export async function confirmDelete(entityName = 'este elemento', theme = null) {
+  const isLightTheme = theme?.name === 'postulante' || theme?.bgSurface === '#ffffff';
+  const entityColor = isLightTheme ? theme?.textPrimary || '#0f172a' : '#fff';
   return confirmAction({
     title: '¿Eliminar?',
-    html: `<span>¿Seguro que deseas eliminar <strong style="color:#fff">${entityName}</strong>? Esta acción no se puede deshacer.</span>`,
+    html: `<span>¿Seguro que deseas eliminar <strong style="color:${entityColor}">${entityName}</strong>? Esta acción no se puede deshacer.</span>`,
     confirmText: 'Sí, eliminar',
     confirmColor: '#dc2626',
     icon: 'warning',

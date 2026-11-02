@@ -250,7 +250,7 @@ export default function PerfilReclutador() {
   };
   if (loading) {
     return <PortalLayout theme={t} navItems={reclutadorNav} pageTitle="Mi Perfil">
-        <div style={{
+        <div role="status" aria-live="polite" style={{
         color: t.textMuted,
         textAlign: "center",
         padding: 40
@@ -347,7 +347,7 @@ export default function PerfilReclutador() {
                 display: "flex",
                 gap: 8
               }}>
-                  <select value={selectedLada} onChange={handleLadaChange} style={{
+                  <select id="reclutador-lada" aria-label="LADA del telefono de contacto" value={selectedLada} onChange={handleLadaChange} style={{
                   ...inputStyle,
                   width: 118,
                   padding: "10px 8px",
@@ -369,7 +369,7 @@ export default function PerfilReclutador() {
                     left: 12,
                     color: t.textMuted
                   }} />
-                    <input type="tel" inputMode="numeric" placeholder="10 digitos" value={phoneNumber} onChange={handlePhoneNumberChange} maxLength={10} style={{
+                    <input id="reclutador-telefono" type="tel" inputMode="numeric" placeholder="10 digitos" aria-label="Numero de telefono de contacto" value={phoneNumber} onChange={handlePhoneNumberChange} maxLength={10} style={{
                     ...inputStyle,
                     paddingLeft: 34
                   }} />
@@ -473,7 +473,7 @@ function Message({
   message
 }) {
   const color = message.tipo === "success" ? "#10b981" : message.tipo === "warning" ? "#f59e0b" : "#ef4444";
-  return <div style={{
+  return <div role={message.tipo === "error" ? "alert" : "status"} aria-live="polite" style={{
     ...alertStyle,
     background: `${color}20`,
     border: `1px solid ${color}`,

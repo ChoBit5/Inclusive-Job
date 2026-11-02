@@ -170,8 +170,8 @@ export default function VacantesReclutador() {
   }, [busqueda, filtroEstado, filtroModalidad, vacantes]);
   if (loading && vacantes.length === 0) {
     return <PortalLayout theme={t} navItems={reclutadorNav} pageTitle="Vacantes">
-        <div className="min-h-[320px] flex flex-col items-center justify-center">
-          <Loader2 className="h-10 w-10 text-purple-500 animate-spin" />
+        <div role="status" aria-live="polite" className="min-h-[320px] flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 text-purple-500 animate-spin" aria-hidden="true" />
           <p className="text-slate-400 mt-4">Sincronizando vacantes...</p>
         </div>
       </PortalLayout>;
@@ -184,36 +184,38 @@ export default function VacantesReclutador() {
             <p className="text-slate-400 text-sm mt-0.5">Visualiza y administra tus vacantes publicadas</p>
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <button onClick={() => handleOpenModal()} disabled={!empresaCargada || !empresaAprobada} title={!empresaCargada ? 'Validando empresa...' : !empresaAprobada ? empresaRechazada ? 'Tu empresa fue rechazada; reenvia sus datos para revision' : 'Tu empresa debe estar aprobada para publicar vacantes' : 'Publicar vacante'} className={`inline-flex items-center gap-2 text-white font-medium px-4 py-2 rounded-lg transition ${empresaCargada && empresaAprobada ? 'bg-purple-600 hover:bg-purple-700' : 'bg-slate-700 cursor-not-allowed opacity-70'}`}>
+            <button type="button" onClick={() => handleOpenModal()} disabled={!empresaCargada || !empresaAprobada} title={!empresaCargada ? 'Validando empresa...' : !empresaAprobada ? empresaRechazada ? 'Tu empresa fue rechazada; reenvia sus datos para revision' : 'Tu empresa debe estar aprobada para publicar vacantes' : 'Publicar vacante'} className={`inline-flex items-center gap-2 text-white font-medium px-4 py-2 rounded-lg transition ${empresaCargada && empresaAprobada ? 'bg-purple-600 hover:bg-purple-700' : 'bg-slate-700 cursor-not-allowed opacity-70'}`}>
               <Plus className="h-4 w-4" /> Publicar vacante
             </button>
-            <button onClick={refetch} className="flex items-center gap-1.5 text-slate-400 hover:text-white transition">
+            <button type="button" onClick={refetch} className="flex items-center gap-1.5 text-slate-400 hover:text-white transition">
               <RefreshCw className="h-4 w-4" /> Actualizar
             </button>
           </div>
         </div>
 
-        {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
-        {empresaCargada && !empresaAprobada && <div className={`mb-4 rounded-lg px-4 py-3 text-sm ${empresaRechazada ? 'border border-red-500/30 bg-red-500/10 text-red-100' : 'border border-amber-500/30 bg-amber-500/10 text-amber-100'}`}>
+        {error && <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
+        {empresaCargada && !empresaAprobada && <div role="status" aria-live="polite" className={`mb-4 rounded-lg px-4 py-3 text-sm ${empresaRechazada ? 'border border-red-500/30 bg-red-500/10 text-red-100' : 'border border-amber-500/30 bg-amber-500/10 text-amber-100'}`}>
             {empresaRechazada ? 'Tu empresa fue rechazada. Corrige y reenvia sus datos desde Mi Empresa para poder publicar vacantes.' : 'Tu empresa aún no está aprobada. Puedes revisar tus vacantes existentes, pero no publicar nuevas hasta que el administrador la valide.'}
           </div>}
-        {errorDiscapacidades && <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">No se pudo cargar el catalogo de discapacidades: {errorDiscapacidades}</div>}
+        {errorDiscapacidades && <div role="alert" className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">No se pudo cargar el catalogo de discapacidades: {errorDiscapacidades}</div>}
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-3xl">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-              <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por titulo..." className="w-full bg-[#131926] border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500" />
+              <label htmlFor="vacantes-busqueda" className="sr-only">Buscar por titulo</label>
+              <input id="vacantes-busqueda" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por titulo..." className="w-full bg-[#131926] border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500" />
             </div>
-            <select value={filtroModalidad} onChange={e => setFiltroModalidad(e.target.value)} className="bg-[#131926] border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-purple-500">
+            <label htmlFor="vacantes-modalidad" className="sr-only">Filtrar por modalidad</label>
+            <select id="vacantes-modalidad" aria-label="Filtrar por modalidad" value={filtroModalidad} onChange={e => setFiltroModalidad(e.target.value)} className="bg-[#131926] border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-300 focus:outline-none focus:border-purple-500">
               <option>Todas las modalidades</option>
               <option>Presencial</option>
               <option>Remoto</option>
               <option>Hibrido</option>
             </select>
           </div>
-          <div className="bg-[#131926] p-1 rounded-lg border border-slate-800/60 flex items-center">
-            {['Todas', 'Activas', 'Pausadas'].map(tab => <button key={tab} onClick={() => setFiltroEstado(tab)} className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${filtroEstado === tab ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+          <div role="group" aria-label="Filtrar por estado" className="bg-[#131926] p-1 rounded-lg border border-slate-800/60 flex items-center">
+            {['Todas', 'Activas', 'Pausadas'].map(tab => <button type="button" key={tab} onClick={() => setFiltroEstado(tab)} aria-pressed={filtroEstado === tab} className={`px-4 py-1.5 rounded-md text-xs font-medium transition ${filtroEstado === tab ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
                 {tab}
               </button>)}
           </div>
@@ -239,11 +241,11 @@ export default function VacantesReclutador() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {vacante.estado !== 'eliminada' && <>
-                            <button onClick={() => toggleEstado(vacante.id_vacante, vacante.estado)} className="text-slate-500 hover:text-purple-400 p-1.5">
-                              {vacante.estado === 'activa' ? <ToggleRight className="h-6 w-6 text-purple-500" /> : <ToggleLeft className="h-6 w-6" />}
+                            <button type="button" onClick={() => toggleEstado(vacante.id_vacante, vacante.estado)} aria-label={`Cambiar estado de ${vacante.titulo_puesto}`} className="ij-touch-target text-slate-500 hover:text-purple-400 p-1.5">
+                              {vacante.estado === 'activa' ? <ToggleRight className="h-6 w-6 text-purple-500" aria-hidden="true" /> : <ToggleLeft className="h-6 w-6" aria-hidden="true" />}
                             </button>
-                            <button onClick={() => handleOpenModal(vacante)} className="text-slate-500 hover:text-amber-400 p-1.5" title="Editar"><Edit className="h-4 w-4" /></button>
-                            <button onClick={() => handleEliminar(vacante.id_vacante)} className="text-slate-500 hover:text-red-400 p-1.5" title="Eliminar"><Trash2 className="h-4 w-4" /></button>
+                            <button type="button" onClick={() => handleOpenModal(vacante)} aria-label={`Editar ${vacante.titulo_puesto}`} className="ij-touch-target text-slate-500 hover:text-amber-400 p-1.5" title="Editar"><Edit className="h-4 w-4" aria-hidden="true" /></button>
+                            <button type="button" onClick={() => handleEliminar(vacante.id_vacante)} aria-label={`Eliminar ${vacante.titulo_puesto}`} className="ij-touch-target text-slate-500 hover:text-red-400 p-1.5" title="Eliminar"><Trash2 className="h-4 w-4" aria-hidden="true" /></button>
                           </>}
                       </div>
                     </td>
@@ -251,7 +253,7 @@ export default function VacantesReclutador() {
               </tbody>
             </table>
           </div>
-          {vacantesFiltradas.length === 0 && <div className="text-center py-12 text-slate-500 font-medium">No se encontraron registros.</div>}
+          {vacantesFiltradas.length === 0 && <div role="status" className="text-center py-12 text-slate-500 font-medium">No se encontraron registros.</div>}
         </div>
 
         {isModalOpen && <VacanteFormModal editingVacante={editingVacante} formData={formData} setFormData={setFormData} discapacidades={catalogoDiscapacidades} loadingDiscapacidades={loadingDiscapacidades} saving={saving} onClose={handleCloseModal} onSubmit={handleGuardarVacante} iaLoading={iaLoading} iaSugerencias={iaSugerencias} onMejorarIA={handleMejorarIA} onAplicarIA={handleAplicarIA} />}
