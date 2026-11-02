@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, BookmarkCheck, Award, Accessibility, Clock, CheckCircle, ArrowRight, Sparkles, MapPin, Briefcase, ChevronRight, FileText, Bell } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
-import { postulantNav } from '../../components/Portal/Navitems';
+import { postulantNav } from '../../components/Portal/navItems';
 import { usePostulanteDashboard } from '../../hooks/Postulante/useDomain.js';
 import {
   accionChecklistPostulante,

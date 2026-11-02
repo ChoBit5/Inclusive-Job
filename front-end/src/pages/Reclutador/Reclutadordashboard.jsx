@@ -4,7 +4,7 @@ import BubleChat from '../Reclutador/ChatBot.jsx';
 import { AlertTriangle, ArrowRight, Briefcase, Plus, TrendingUp, Users } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import PortalLayout from '../../components/Portal/Portallayout';
-import { reclutadorNav } from '../../components/Portal/Navitems';
+import { reclutadorNav } from '../../components/Portal/navItems';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';

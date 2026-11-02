@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Bell, CheckCircle2, Eye, Flag, RefreshCw, X } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
-import { reclutadorNav } from '../../components/Portal/Navitems';
+import { reclutadorNav } from '../../components/Portal/navItems';
 import { Button, ErrorBanner, PageHeader, SearchBar } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';

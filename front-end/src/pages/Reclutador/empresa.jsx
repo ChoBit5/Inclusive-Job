@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Building, CheckCircle, Clock, FileText, Globe, MapPin, Phone, Save, Send, XCircle } from "lucide-react";
 import PortalLayout from "../../components/Portal/Portallayout";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
-import { reclutadorNav } from "../../components/Portal/Navitems";
+import { reclutadorNav } from "../../components/Portal/navItems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
 import { useActualizarEmpresaReclutador, useEmpresaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { PAISES_LADA, getDefaultLada, joinPhone, normalizeRfc, splitPhoneWithLada, validateCompanyEmail, validateMexicanRfc } from "../../hooks/Reclutador/empresaHelpers.js";

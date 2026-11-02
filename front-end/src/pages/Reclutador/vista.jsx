@@ -1,6 +1,6 @@
 import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorTheme } from '../../components/Portal/portalTheme';
-import { reclutadorNav } from '../../components/Portal/Navitems';
+import { reclutadorNav } from '../../components/Portal/navItems';
 import { Plus, Search } from 'lucide-react';
 const t = reclutadorTheme;
 export default function Vista() {

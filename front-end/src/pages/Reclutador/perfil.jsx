@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Briefcase, Building, Camera, CheckCircle, Clock, Mail, Phone, Save, ShieldAlert, User, XCircle } from "lucide-react";
 import PortalLayout from "../../components/Portal/Portallayout";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
-import { reclutadorNav } from "../../components/Portal/Navitems";
+import { reclutadorNav } from "../../components/Portal/navItems";
 import BubleChat from "../Reclutador/ChatBot.jsx";
 import { useActualizarPerfilReclutador, usePerfilReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { useSesion } from "../../hooks/Sesion/useSesion.js";

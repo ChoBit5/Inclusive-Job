@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PortalLayout from "../../components/Portal/Portallayout";
 import { postulantTheme } from "../../components/Portal/portalTheme";
-import { postulantNav } from "../../components/Portal/Navitems";
+import { postulantNav } from "../../components/Portal/navItems";
 import { usePerfilPostulante } from "../../hooks/Postulante/useDomain.js";
 import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 import {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
-import { postulantNav } from '../../components/Portal/Navitems';
+import { postulantNav } from '../../components/Portal/navItems';
 import { usePostulacionesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 import { useFocusTrap } from '../../components/useFocusTrap.js';

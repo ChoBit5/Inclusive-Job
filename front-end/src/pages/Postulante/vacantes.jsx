@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Accessibility, MapPin, Briefcase, ChevronRight, ArrowRight, CheckCircle, Clock, Sparkles, X, Calendar, AlertTriangle, Building2, Mail, Phone, Globe } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
-import { postulantNav } from '../../components/Portal/Navitems';
+import { postulantNav } from '../../components/Portal/navItems';
 import { useRecomendacionVacantesIA, useVacantesPostulante } from '../../hooks/Postulante/useDomain.js';
 import { useFocusTrap } from '../../components/useFocusTrap.js';
 import { resolveAssetUrl as backendAssetUrl } from '../../hooks/Sesion/apiSesion.js';

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Edit, Loader2, MapPin, Plus, RefreshCw, Search, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
-import { reclutadorNav } from '../../components/Portal/Navitems';
+import { reclutadorNav } from '../../components/Portal/navItems';
 import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/alerts';
 import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import BubleChat from '../Reclutador/ChatBot.jsx';

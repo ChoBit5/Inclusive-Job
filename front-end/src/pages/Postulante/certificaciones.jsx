@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { ArrowRight, FileText, Eye, Pencil, Award, Upload, Loader, Trash2, Sparkles, Calendar } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
-import { postulantNav } from '../../components/Portal/Navitems';
+import { postulantNav } from '../../components/Portal/navItems';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 import { useAnalisisCvIA, useDocumentosPostulante, usePostulanteChatHistorial } from '../../hooks/Postulante/useDomain.js';
 import { validateCvFile } from '../../hooks/Postulante/cvHelpers.js';
