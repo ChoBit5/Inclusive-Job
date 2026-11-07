@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/cors.php';
+require_once __DIR__ . '/../../config/pdf.php';
 require_once __DIR__ . '/../../Conexion.php';
 require_once __DIR__ . '/cv_helpers.php';
 
@@ -113,15 +114,7 @@ if ($method === 'GET') {
         exit;
     }
 
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: inline; filename=cv.pdf');
-    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    header('X-Content-Type-Options: nosniff');
-    header('Content-Length: ' . strlen($cv));
-    echo $cv;
-    exit;
+    inclusijob_enviar_pdf((string)$cv, 'cv.pdf');
 }
 
 header('Content-Type: application/json; charset=utf-8');

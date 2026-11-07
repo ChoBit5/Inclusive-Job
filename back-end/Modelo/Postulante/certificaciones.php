@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/cors.php';
 require_once __DIR__ . '/../../config/pdfupload.php';
+require_once __DIR__ . '/../../config/pdf.php';
 require_once __DIR__ . '/../../config/sanitize.php';
 require_once __DIR__ . '/../../Conexion.php';
 
@@ -171,15 +172,7 @@ if ($method === 'GET' && isset($_GET['archivo'])) {
         exit;
     }
 
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: inline; filename=certificacion.pdf');
-    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    header('X-Content-Type-Options: nosniff');
-    header('Content-Length: ' . strlen($pdf));
-    echo $pdf;
-    exit;
+    inclusijob_enviar_pdf((string)$pdf, 'certificacion.pdf');
 }
 
 if ($method === 'DELETE') {

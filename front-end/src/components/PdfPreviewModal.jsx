@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Loader, X } from 'lucide-react';
 import { useFocusTrap } from './useFocusTrap.js';
+import { readPdfErrorMessage } from '../hooks/Reclutador/candidatosHelpers.js';
 export default function PdfPreviewModal({
   open,
   sourceUrl,
@@ -34,11 +35,11 @@ export default function PdfPreviewModal({
         });
 
         const contentType = res.headers.get('content-type') || '';
-        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
-          throw new Error('No se pudo recuperar el PDF.');
-        }
-
         const blob = await res.blob();
+        if (!res.ok || !contentType.toLowerCase().includes('application/pdf')) {
+          const payload = await blob.text().catch(() => '');
+          throw new Error(readPdfErrorMessage(payload, 'No se pudo recuperar el PDF.'));
+        }
         if (!active) return;
 
         const objectUrl = URL.createObjectURL(blob);

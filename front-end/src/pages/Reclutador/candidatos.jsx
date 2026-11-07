@@ -10,17 +10,21 @@ import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 import PdfPreviewModal from "../../components/PdfPreviewModal";
 import { useCandidatosVacanteReclutador, useVacantesConCandidatosReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { ENDPOINTS } from "../../hooks/Reclutador/apiReclutador.js";
+import { getCertificacionPdfUrl as buildCertificacionPdfUrl, getCvUrl as buildCvUrl, getEntrevistaEstado, mapEstadoPostulacion } from "../../hooks/Reclutador/candidatosHelpers.js";
 export default function Candidatos() {
   const location = useLocation();
   const navigate = useNavigate();
   const {
     data,
+    loading: vacantesLoading,
+    error: vacantesError,
     refetch
   } = useVacantesConCandidatosReclutador();
   const {
     obtenerCandidatosVacante,
     actualizarEstadoPostulacion,
-    loading
+    loading: candidatosLoading,
+    error: candidatosError
   } = useCandidatosVacanteReclutador();
   const {
     solicitarEntrevista
@@ -119,11 +123,7 @@ export default function Candidatos() {
     }
   };
   const getCvUrl = cand => {
-    if (cand?.cv_url) return cand.cv_url;
-    if (Number(cand?.tiene_cv ?? 0) && cand?.id_postulacion) {
-      return ENDPOINTS.candidatos.cv(cand.id_postulacion);
-    }
-    return "";
+    return buildCvUrl(cand, ENDPOINTS.candidatos);
   };
   const getHabilidades = cand => {
     const raw = cand?.habilidades;
@@ -140,9 +140,9 @@ export default function Candidatos() {
     return text.split(/[,;\n]/).map(item => item.trim()).filter(Boolean);
   };
   const getCertificacionPdfUrl = cert => {
-    const id = cert?.id_certificaciones ?? cert?.id_certificacion ?? cert?.id;
-    return id && Number(cert?.tiene_pdf ?? 0) ? ENDPOINTS.candidatos.certificacionPdf(id) : "";
+    return buildCertificacionPdfUrl(cert, ENDPOINTS.candidatos);
   };
+  const entrevistaEstado = getEntrevistaEstado(candidatoSeleccionado || {}, entrevistasEnviadas, entrevistaEnviando);
   const openPdfPreview = (sourceUrl, title) => {
     if (!sourceUrl) return;
     setPdfPreview({
@@ -163,7 +163,11 @@ export default function Candidatos() {
           }
         }
       `}</style>
-      {!vacanteSeleccionada && !candidatoSeleccionado && <TableCard>
+      {!vacanteSeleccionada && !candidatoSeleccionado && <>
+        {vacantesLoading && <Feedback>Cargando vacantes...</Feedback>}
+        {!vacantesLoading && vacantesError && <Feedback error>No se pudieron cargar las vacantes: {vacantesError}</Feedback>}
+        {!vacantesLoading && !vacantesError && vacantes.length === 0 && <Feedback>No hay vacantes disponibles.</Feedback>}
+        {!vacantesLoading && !vacantesError && vacantes.length > 0 && <TableCard>
           <table style={{
         width: "100%",
         borderCollapse: "collapse"
@@ -223,6 +227,7 @@ export default function Candidatos() {
             </tbody>
           </table>
         </TableCard>}
+      </>}
 
       {vacanteSeleccionada && !candidatoSeleccionado && <div style={{
       display: "flex",
@@ -246,11 +251,11 @@ export default function Candidatos() {
             </h2>
           </div>
 
-          {loading ? <div style={{
+          {candidatosLoading ? <div style={{
         color: t.textMuted,
         textAlign: "center",
         padding: 20
-      }}>Cargando candidatos...</div> : <div style={{
+      }}>Cargando candidatos...</div> : candidatosError ? <Feedback error>{candidatosError}</Feedback> : <div style={{
         display: "flex",
         flexDirection: "column",
         gap: 12
@@ -529,18 +534,18 @@ export default function Candidatos() {
               color: t.textMuted,
               fontSize: 12
             }}>
-                  {candidatoSeleccionado.entrevista_realizada ? `${candidatoSeleccionado.nombre_completo} ya completo la entrevista de este proceso.` : `Invita a ${candidatoSeleccionado.nombre_completo} a realizar la entrevista real de este proceso.`}
+                  {entrevistaEstado === "completada" ? `${candidatoSeleccionado.nombre_completo} ya completo la entrevista de este proceso.` : `Invita a ${candidatoSeleccionado.nombre_completo} a realizar la entrevista real de este proceso.`}
                 </span>
               </div>
             </div>
 
-            {candidatoSeleccionado.entrevista_realizada ? <span style={entrevistaCompletadaBadgeStyle}>
+            {entrevistaEstado === "completada" ? <span style={entrevistaCompletadaBadgeStyle}>
                 <CheckCircle size={15} />
                 Entrevista completada
                 {candidatoSeleccionado.puntuacion_entrevista != null ? ` · ${candidatoSeleccionado.puntuacion_entrevista}/10` : ""}
-              </span> : <button onClick={() => mandarEntrevista(candidatoSeleccionado)} disabled={entrevistaEnviando === candidatoSeleccionado.id_postulacion || entrevistasEnviadas.has(candidatoSeleccionado.id_postulacion)} style={entrevistaBtnStyle(entrevistaEnviando === candidatoSeleccionado.id_postulacion || entrevistasEnviadas.has(candidatoSeleccionado.id_postulacion))}>
+              </span> : <button onClick={() => mandarEntrevista(candidatoSeleccionado)} disabled={entrevistaEstado === "enviando" || entrevistaEstado === "enviada"} style={entrevistaBtnStyle(entrevistaEstado === "enviando" || entrevistaEstado === "enviada")}>
                 <Mic size={15} />
-                {entrevistasEnviadas.has(candidatoSeleccionado.id_postulacion) ? "Entrevista enviada" : entrevistaEnviando === candidatoSeleccionado.id_postulacion ? "Enviando..." : "Mandar entrevista"}
+                {entrevistaEstado === "enviada" ? "Entrevista enviada" : entrevistaEstado === "enviando" ? "Enviando..." : "Mandar entrevista"}
               </button>}
           </div>
         </div>}
@@ -624,6 +629,19 @@ function TableCard({
     overflow: "hidden"
   }}>{children}</div>;
 }
+function Feedback({
+  children,
+  error = false
+}) {
+  return <div role={error ? "alert" : undefined} style={{
+    background: error ? "rgba(239,68,68,0.12)" : t.bgSurface,
+    border: `1px solid ${error ? "rgba(239,68,68,0.35)" : t.border}`,
+    borderRadius: 12,
+    color: error ? "#fca5a5" : t.textMuted,
+    padding: 20,
+    textAlign: "center"
+  }}>{children}</div>;
+}
 function Section({
   icon: Icon,
   title,
@@ -656,34 +674,7 @@ function Estado({
 function EstadoPostulacion({
   estado
 }) {
-  const normalized = String(estado || "pendiente").toLowerCase();
-  const styles = {
-    aceptado: {
-      bg: "rgba(16,185,129,0.16)",
-      color: "#34d399",
-      border: "rgba(16,185,129,0.35)",
-      text: "Aceptado"
-    },
-    rechazado: {
-      bg: "rgba(239,68,68,0.16)",
-      color: "#f87171",
-      border: "rgba(239,68,68,0.35)",
-      text: "Rechazado"
-    },
-    pendiente: {
-      bg: "rgba(245,158,11,0.14)",
-      color: "#fbbf24",
-      border: "rgba(245,158,11,0.32)",
-      text: "Pendiente"
-    },
-    revision: {
-      bg: "rgba(99,102,241,0.16)",
-      color: "#a5b4fc",
-      border: "rgba(99,102,241,0.35)",
-      text: "Revision"
-    }
-  };
-  const current = styles[normalized] || styles.pendiente;
+  const current = mapEstadoPostulacion(estado);
   return <span style={{
     display: "inline-flex",
     alignItems: "center",
