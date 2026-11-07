@@ -235,7 +235,9 @@ try {
         ['id' => 3, 'label' => 'Foto de perfil', 'done' => !empty($usuario['foto_perfil']), 'path' => '/formulario', 'peso' => 10],
         ['id' => 4, 'label' => 'Discapacidad registrada', 'done' => count($discapacidades) > 0, 'path' => '/formulario', 'peso' => 15],
         ['id' => 5, 'label' => 'Registro de habilidades', 'done' => $postulante && trim((string)($postulante['habilidades'] ?? '')) !== '', 'path' => '/postulante/perfil', 'peso' => 10],
-        ['id' => 6, 'label' => 'Portafolio electronico', 'done' => $postulante && !empty($postulante['portafolio_url']), 'path' => '/postulante/perfil', 'peso' => 10],
+        ['id' => 6, 'label' => 'Datos de contacto', 'done' => $postulante
+            && trim((string)($usuario['telefono'] ?? '')) !== ''
+            && trim((string)($postulante['portafolio_url'] ?? '')) !== '', 'path' => '/postulante/perfil', 'peso' => 10],
         ['id' => 7, 'label' => 'Al menos 1 certificacion', 'done' => $certificaciones > 0, 'path' => '/postulante/certificaciones', 'peso' => 20],
         ['id' => 8, 'label' => 'CV registrado', 'done' => $postulante && !empty($postulante['tiene_cv']), 'path' => '/postulante/certificaciones', 'peso' => 5],
     ];

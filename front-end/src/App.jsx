@@ -46,6 +46,7 @@ import ChatBubble from './components/ChatBot.jsx';
 import { useSesion } from './hooks/Sesion/useSesion.js';
 import { rutaPorRol } from './hooks/Sesion/apiSesion.js';
 import { useFormularioPostulante } from './hooks/Postulante/useDomain.js';
+import { debeRequerirFormulario } from './hooks/Postulante/formularioHelpers.js';
 
 function LoadingSesion() {
   return (
@@ -114,7 +115,7 @@ function PostulanteFormularioGate() {
           return;
         }
 
-        setRequiereFormulario(Boolean(data.requiere_formulario || !data.completado));
+        setRequiereFormulario(debeRequerirFormulario(data));
       } catch {
         if (activo) {
           setRequiereFormulario(false);

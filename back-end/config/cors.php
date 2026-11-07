@@ -6,7 +6,7 @@
 |--------------------------------------------------------------------------
 
 */
-const INCLUSIJOB_FRONTEND_ORIGIN = 'http://localhost:5173/';
+const INCLUSIJOB_FRONTEND_ORIGIN = 'http://localhost:5173';
 const INCLUSIJOB_FRONTEND_URL = INCLUSIJOB_FRONTEND_ORIGIN . '/';
 
 /*
@@ -22,11 +22,27 @@ define('INCLUSIJOB_BACKEND_BASE_PATH', getenv('INCLUSIJOB_BACKEND_BASE_PATH') ?:
 | Base de datos
 |--------------------------------------------------------------------------
 | INCLUSIJOB_DB_HOST, INCLUSIJOB_DB_USER, INCLUSIJOB_DB_PASSWORD, INCLUSIJOB_DB_NAME
-*/
+
+Datos de host
 define('INCLUSIJOB_DB_HOST', getenv('INCLUSIJOB_DB_HOST') ?: 'localhost');
 define('INCLUSIJOB_DB_USER', getenv('INCLUSIJOB_DB_USER') ?: 'u319109241_inclusive');
 define('INCLUSIJOB_DB_PASSWORD', getenv('INCLUSIJOB_DB_PASSWORD') ?: 'Leesin1346?');
 define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'u319109241_Inclusivejob');
+
+Datos local 
+
+define('INCLUSIJOB_DB_HOST', getenv('INCLUSIJOB_DB_HOST') ?: 'localhost');
+define('INCLUSIJOB_DB_USER', getenv('INCLUSIJOB_DB_USER') ?: 'root');
+define('INCLUSIJOB_DB_PASSWORD', getenv('INCLUSIJOB_DB_PASSWORD') ?: '');
+define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'inclusijob');
+
+*/
+
+
+define('INCLUSIJOB_DB_HOST', getenv('INCLUSIJOB_DB_HOST') ?: 'localhost');
+define('INCLUSIJOB_DB_USER', getenv('INCLUSIJOB_DB_USER') ?: 'root');
+define('INCLUSIJOB_DB_PASSWORD', getenv('INCLUSIJOB_DB_PASSWORD') ?: '');
+define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'inclusijob');
 
 /*
 |--------------------------------------------------------------------------

@@ -2,6 +2,11 @@ import React from "react";
 import { postulantTheme } from '../../components/Portal/portalTheme';
 import { useSesion } from "../../hooks/Sesion/useSesion.js";
 import { useFormularioPostulante } from "../../hooks/Postulante/useDomain.js";
+import {
+  buildFormularioData,
+  getFormularioProgress,
+  getFormularioResponseMessage,
+} from "../../hooks/Postulante/formularioHelpers.js";
 export default function Formulario() {
   const {
     obtenerEstadoFormulario,
@@ -39,6 +44,13 @@ export default function Formulario() {
       try {
         const estado = await obtenerEstadoFormulario();
         if (!activo) return;
+        if (estado?.httpOk === false || estado?.success === false) {
+          setMensaje({
+            texto: estado?.mensaje || estado?.message || "No se pudo cargar el formulario.",
+            tipo: "error",
+          });
+          return;
+        }
         const catalogo = Array.isArray(estado?.discapacidades) ? estado.discapacidades : [];
         setOpcionesDiscapacidad(catalogo);
         const tiposSeleccionados = Array.isArray(estado?.tipos_discapacidad) ? estado.tipos_discapacidad.map(id => String(id)) : [];
@@ -94,18 +106,13 @@ export default function Formulario() {
       };
     });
   };
-  const camposCompletos = {
-    tipoDiscapacidad: form.tiposDiscapacidad.length > 0,
-    descripcionDiscapacidad: !!form.descripcionDiscapacidad.trim(),
-    esfuerzoFisico: !!form.esfuerzoFisico,
-    experiencia: !!form.experiencia.trim(),
-    habilidades: !!form.habilidades.trim(),
-    fotoPerfil: !!form.fotoPerfil
-  };
-  const totalCampos = Object.keys(camposCompletos).length;
-  const camposLlenos = Object.values(camposCompletos).filter(Boolean).length;
-  const formularioListo = camposLlenos === totalCampos;
-  const progreso = Math.round(camposLlenos / totalCampos * 100);
+  const {
+    camposCompletos,
+    totalCampos,
+    camposLlenos,
+    formularioListo,
+    progreso,
+  } = getFormularioProgress(form);
   const handleSubmit = async e => {
     e.preventDefault();
     setMensaje({
@@ -160,30 +167,16 @@ export default function Formulario() {
       setOpenSection(1);
       return;
     }
-    const data = new FormData();
-    data.append("id_usuario", String(user.id));
-    form.tiposDiscapacidad.forEach(tipo => data.append("tipoDiscapacidad[]", tipo));
-    data.append("descripcionDiscapacidad", form.descripcionDiscapacidad);
-    data.append("esfuerzoFisico", form.esfuerzoFisico);
-    data.append("experiencia", form.experiencia);
-    data.append("habilidades", form.habilidades);
-    data.append("fotoPerfil", form.fotoPerfil);
+    const data = buildFormularioData(form, user.id);
     setEnviando(true);
     try {
       const json = await guardarFormulario(data);
-      if (json.success) {
-        setMensaje({
-          texto: "¡Perfil guardado correctamente! Redirigiendo...",
-          tipo: "ok"
-        });
+      const responseMessage = getFormularioResponseMessage(json, "Error al guardar.");
+      setMensaje(responseMessage);
+      if (json.success && json.httpOk !== false) {
         setTimeout(() => {
           window.location.href = "/postulante";
         }, 2000);
-      } else {
-        setMensaje({
-          texto: json.mensaje || "Error al guardar.",
-          tipo: "error"
-        });
       }
     } catch {
       setMensaje({

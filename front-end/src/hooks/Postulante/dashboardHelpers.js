@@ -4,12 +4,12 @@ const DEFAULT_CHECKLIST = [
   { id: 3, label: 'Foto de perfil', done: false, path: '/formulario', peso: 10 },
   { id: 4, label: 'Discapacidad registrada', done: false, path: '/formulario', peso: 15 },
   { id: 5, label: 'Registro de habilidades', done: false, path: '/postulante/perfil', peso: 10 },
-  { id: 6, label: 'Portafolio electronico', done: false, path: '/postulante/perfil', peso: 10 },
+  { id: 6, label: 'Datos de contacto', done: false, path: '/postulante/perfil', peso: 10 },
   { id: 7, label: 'Al menos 1 certificacion', done: false, path: '/postulante/certificaciones', peso: 20 },
   { id: 8, label: 'CV registrado', done: false, path: '/postulante/certificaciones', peso: 5 },
 ];
 
-const HIDDEN_CHECKLIST_IDS = new Set([2, 6]);
+const HIDDEN_CHECKLIST_IDS = new Set([2]);
 
 export function filtrarChecklistPostulante(checklist = []) {
   return (Array.isArray(checklist) ? checklist : [])
@@ -18,6 +18,12 @@ export function filtrarChecklistPostulante(checklist = []) {
 
 export function accionChecklistPostulante(item = {}) {
   const id = Number(item.id);
+  if (id === 6 && !item.done) {
+    return {
+      path: '/postulante/perfil',
+      state: { openEdit: true, editTab: 'info' },
+    };
+  }
   if (id === 3 || id === 4 || id === 5) {
     return {
       path: '/postulante/perfil',
