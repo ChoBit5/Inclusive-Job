@@ -182,6 +182,93 @@ try {
     $idReclutador = candidatos_id_reclutador($con, $idUsuario);
     $accion = (string)($_GET['accion'] ?? '');
 
+    if ($accion === 'actualizar_estado_postulacion') {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            reclutador_responder(false, 'Metodo no permitido.', null, 405);
+        }
+
+        $data = reclutador_json_body();
+        $idRaw = $data['id_postulacion'] ?? 0;
+        $estadoRaw = $data['estado'] ?? '';
+        $idPostulacion = is_scalar($idRaw) ? (int)$idRaw : 0;
+        $estado = is_scalar($estadoRaw) ? strtolower(trim((string)$estadoRaw)) : '';
+        $estadosValidos = ['pendiente', 'aceptado', 'rechazado'];
+
+        if ($idPostulacion <= 0 || !in_array($estado, $estadosValidos, true)) {
+            reclutador_responder(false, 'Datos invalidos para actualizar la postulacion.', null, 400);
+        }
+
+        $stmt = candidatos_preparar(
+            $con,
+            "UPDATE postulaciones p
+                INNER JOIN vacantes v ON v.id_vacante = p.id_vacante
+                INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
+                INNER JOIN empresas e ON e.id_empresas = r.id_empresas
+                SET p.estado = ?
+                WHERE p.id_postulacion = ?
+                  AND v.id_reclutador = ?
+                  AND v.estado <> 'eliminada'
+                  AND e.estado_validacion = 1",
+            'No se pudo actualizar el estado de la postulacion.'
+        );
+        candidatos_vincular($stmt, 'sii', $estado, $idPostulacion, $idReclutador);
+        candidatos_ejecutar($stmt);
+        $filasAfectadas = mysqli_stmt_affected_rows($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($filasAfectadas > 0) {
+            reclutador_responder(true, 'Estado de postulacion actualizado', [
+                'id_postulacion' => $idPostulacion,
+                'estado' => $estado,
+            ]);
+        }
+
+        $stmt = candidatos_preparar(
+            $con,
+            'SELECT
+                p.estado,
+                v.estado AS estado_vacante,
+                v.id_reclutador,
+                e.estado_validacion
+             FROM postulaciones p
+             INNER JOIN vacantes v ON v.id_vacante = p.id_vacante
+             INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
+             LEFT JOIN empresas e ON e.id_empresas = r.id_empresas
+             WHERE p.id_postulacion = ?
+             LIMIT 1',
+            'No se pudo verificar la postulacion.'
+        );
+        candidatos_vincular($stmt, 'i', $idPostulacion);
+        candidatos_ejecutar($stmt);
+        $fila = mysqli_fetch_assoc(candidatos_resultado($stmt, 'No se pudo verificar la postulacion.'));
+        mysqli_stmt_close($stmt);
+
+        if (!$fila || (int)$fila['id_reclutador'] !== $idReclutador) {
+            reclutador_responder(false, 'No se encontro la postulacion para tus vacantes.', null, 404);
+        }
+
+        if ((string)$fila['estado_vacante'] === 'eliminada') {
+            reclutador_responder(false, 'Esta vacante fue suspendida por el administrador y no puede gestionarse.', null, 403);
+        }
+
+        if ((int)($fila['estado_validacion'] ?? 0) !== 1) {
+            reclutador_responder(false, 'Tu empresa no esta aprobada para gestionar candidatos.', null, 403);
+        }
+
+        if (strtolower(trim((string)($fila['estado'] ?? ''))) === $estado) {
+            reclutador_responder(true, 'Estado de postulacion actualizado', [
+                'id_postulacion' => $idPostulacion,
+                'estado' => $estado,
+            ]);
+        }
+
+        candidatos_fallo(
+            'actualizar estado sin filas afectadas',
+            'La postulacion cumplio las condiciones pero no cambio de estado.',
+            'No se pudo actualizar el estado de la postulacion.'
+        );
+    }
+
     if ($accion === 'listar_por_vacante') {
         $sql = "SELECT
                     v.id_vacante,

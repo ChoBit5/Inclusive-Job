@@ -10,7 +10,7 @@ import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 import PdfPreviewModal from "../../components/PdfPreviewModal";
 import { useCandidatosVacanteReclutador, useVacantesConCandidatosReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { ENDPOINTS } from "../../hooks/Reclutador/apiReclutador.js";
-import { getCertificacionPdfUrl as buildCertificacionPdfUrl, getCvUrl as buildCvUrl, getEntrevistaEstado, mapEstadoPostulacion } from "../../hooks/Reclutador/candidatosHelpers.js";
+import { applyPostulacionEstado, getCertificacionPdfUrl as buildCertificacionPdfUrl, getCvUrl as buildCvUrl, getEntrevistaEstado, getPostulacionActionState, mapEstadoPostulacion } from "../../hooks/Reclutador/candidatosHelpers.js";
 export default function Candidatos() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,14 +87,9 @@ export default function Candidatos() {
       if (!result?.success) {
         throw new Error(result?.message || "No se pudo actualizar la postulacion.");
       }
-      setCandidatos(prev => prev.map(item => Number(item.id_postulacion) === Number(cand.id_postulacion) ? {
-        ...item,
-        estado_postulacion: estado
-      } : item));
-      setCandidatoSeleccionado(prev => prev && Number(prev.id_postulacion) === Number(cand.id_postulacion) ? {
-        ...prev,
-        estado_postulacion: estado
-      } : prev);
+      const estadoActualizado = result?.data?.estado || estado;
+      setCandidatos(prev => applyPostulacionEstado(prev, null, cand.id_postulacion, estadoActualizado).candidatos);
+      setCandidatoSeleccionado(prev => applyPostulacionEstado([], prev, cand.id_postulacion, estadoActualizado).candidatoSeleccionado);
       await refetch().catch(() => {});
       await successAlert(estado === "aceptado" ? "Candidato aceptado" : "Candidato rechazado", "El estado de la postulacion se actualizo correctamente.", t);
     } catch (err) {
@@ -143,6 +138,7 @@ export default function Candidatos() {
     return buildCertificacionPdfUrl(cert, ENDPOINTS.candidatos);
   };
   const entrevistaEstado = getEntrevistaEstado(candidatoSeleccionado || {}, entrevistasEnviadas, entrevistaEnviando);
+  const candidatoSeleccionadoActionState = getPostulacionActionState(candidatoSeleccionado || {}, postulacionActualizando);
   const openPdfPreview = (sourceUrl, title) => {
     if (!sourceUrl) return;
     setPdfPreview({
@@ -261,6 +257,7 @@ export default function Candidatos() {
         gap: 12
       }}>
               {candidatos.map(cand => {
+          const actionState = getPostulacionActionState(cand, postulacionActualizando);
           const esDestacado = candidatoDestacado?.id_postulacion === Number(cand.id_postulacion);
           return <div key={cand.id_postulacion} style={esDestacado ? cardStyleDestacado : cardStyle}>
                     <div>
@@ -310,10 +307,10 @@ export default function Candidatos() {
                       <button onClick={() => setCandidatoSeleccionado(cand)} style={actionButtonStyle("perfil")}>
                         <Eye size={14} /> Ver perfil
                       </button>
-                      <button onClick={() => cambiarEstadoPostulacion(cand, "aceptado")} disabled={postulacionActualizando === cand.id_postulacion || cand.estado_postulacion === "aceptado"} style={actionButtonStyle("aceptar", postulacionActualizando === cand.id_postulacion || cand.estado_postulacion === "aceptado")}>
+                      <button onClick={() => cambiarEstadoPostulacion(cand, "aceptado")} disabled={actionState.aceptar} style={actionButtonStyle("aceptar", actionState.aceptar)}>
                         <CheckCircle size={14} /> Aceptar
                       </button>
-                      <button onClick={() => cambiarEstadoPostulacion(cand, "rechazado")} disabled={postulacionActualizando === cand.id_postulacion || cand.estado_postulacion === "rechazado"} style={actionButtonStyle("rechazar", postulacionActualizando === cand.id_postulacion || cand.estado_postulacion === "rechazado")}>
+                      <button onClick={() => cambiarEstadoPostulacion(cand, "rechazado")} disabled={actionState.rechazar} style={actionButtonStyle("rechazar", actionState.rechazar)}>
                         <XCircle size={14} /> Rechazar
                       </button>
                     </div>
@@ -410,10 +407,10 @@ export default function Candidatos() {
             gap: 8,
             flexWrap: "wrap"
           }}>
-                <button onClick={() => cambiarEstadoPostulacion(candidatoSeleccionado, "aceptado")} disabled={postulacionActualizando === candidatoSeleccionado.id_postulacion || candidatoSeleccionado.estado_postulacion === "aceptado"} style={actionButtonStyle("aceptar", postulacionActualizando === candidatoSeleccionado.id_postulacion || candidatoSeleccionado.estado_postulacion === "aceptado")}>
+                <button onClick={() => cambiarEstadoPostulacion(candidatoSeleccionado, "aceptado")} disabled={candidatoSeleccionadoActionState.aceptar} style={actionButtonStyle("aceptar", candidatoSeleccionadoActionState.aceptar)}>
                   <CheckCircle size={14} /> Aceptar
                 </button>
-                <button onClick={() => cambiarEstadoPostulacion(candidatoSeleccionado, "rechazado")} disabled={postulacionActualizando === candidatoSeleccionado.id_postulacion || candidatoSeleccionado.estado_postulacion === "rechazado"} style={actionButtonStyle("rechazar", postulacionActualizando === candidatoSeleccionado.id_postulacion || candidatoSeleccionado.estado_postulacion === "rechazado")}>
+                <button onClick={() => cambiarEstadoPostulacion(candidatoSeleccionado, "rechazado")} disabled={candidatoSeleccionadoActionState.rechazar} style={actionButtonStyle("rechazar", candidatoSeleccionadoActionState.rechazar)}>
                   <XCircle size={14} /> Rechazar
                 </button>
               </div>

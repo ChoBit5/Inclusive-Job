@@ -67,3 +67,29 @@ export function readPdfErrorMessage(payload, fallback) {
     return raw;
   }
 }
+
+export function getPostulacionActionState(candidato = {}, actualizandoId = null) {
+  const id = Number(candidato.id_postulacion);
+  const estado = String(candidato.estado_postulacion || '').trim().toLowerCase();
+  const actualizando = actualizandoId !== null && Number(actualizandoId) === id;
+
+  return {
+    aceptar: actualizando || estado === 'aceptado',
+    rechazar: actualizando || estado === 'rechazado',
+  };
+}
+
+export function applyPostulacionEstado(candidatos = [], candidatoSeleccionado = null, idPostulacion, estado) {
+  const id = Number(idPostulacion);
+  const estadoNormalizado = String(estado || '').trim().toLowerCase();
+  const actualizar = candidato => Number(candidato.id_postulacion) === id
+    ? { ...candidato, estado_postulacion: estadoNormalizado }
+    : candidato;
+
+  return {
+    candidatos: candidatos.map(actualizar),
+    candidatoSeleccionado: candidatoSeleccionado && Number(candidatoSeleccionado.id_postulacion) === id
+      ? actualizar(candidatoSeleccionado)
+      : candidatoSeleccionado,
+  };
+}
