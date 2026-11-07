@@ -6,6 +6,8 @@ import { useUsuarioAcciones, useUsuarioDetalle } from '../../hooks/Admin/useDoma
 import { ENDPOINTS } from '../../hooks/Admin/apiAdmin.js';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 import { confirmSuspend, confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 const ESTADO_BADGE = {
   activo: 'success',
@@ -193,8 +195,8 @@ export default function UsuarioPerfil() {
       await request();
       await refetch();
       successAlert(title, text);
-    } catch {
-      errorAlert('Error', 'No se pudo completar la acción.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo completar la acción.'));
     } finally {
       setActionLoading(null);
     }
@@ -214,7 +216,7 @@ export default function UsuarioPerfil() {
     const name = nombreCompleto(usuario);
     const ok = await confirmAction({
       title: '¿Reactivar usuario?',
-      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${name}</strong>.</span>`,
+      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${escapeHtml(name)}</strong>.</span>`,
       confirmText: 'Reactivar',
       confirmColor: '#16a34a',
       icon: 'question'

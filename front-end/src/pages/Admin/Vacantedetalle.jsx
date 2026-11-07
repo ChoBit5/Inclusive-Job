@@ -5,6 +5,8 @@ import { Badge, Button, ErrorBanner } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import { useVacanteAcciones, useVacanteDetalle } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 const VACANTE_BADGE = {
   activa: 'success',
   cerrada: 'default',
@@ -106,8 +108,8 @@ export default function VacanteDetalle() {
       await request();
       if (afterSuccess) afterSuccess();else await refetch();
       successAlert(successTitle, successText);
-    } catch {
-      errorAlert('Error', 'No se pudo completar la accion. Intenta de nuevo.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo completar la accion. Intenta de nuevo.'));
     } finally {
       setActionLoading(null);
     }
@@ -116,7 +118,7 @@ export default function VacanteDetalle() {
     const titulo = getTitulo(vacante);
     const ok = await confirmAction({
       title: 'Cerrar vacante',
-      html: `<span>La vacante <strong style="color:#fff">"${titulo}"</strong> dejara de recibir postulaciones.</span>`,
+      html: `<span>La vacante <strong style="color:#fff">"${escapeHtml(titulo)}"</strong> dejara de recibir postulaciones.</span>`,
       confirmText: 'Cerrar vacante',
       confirmColor: '#475569',
       icon: 'warning'
@@ -133,7 +135,7 @@ export default function VacanteDetalle() {
     const titulo = getTitulo(vacante);
     const ok = await confirmAction({
       title: 'Suspender vacante',
-      html: `<span>La vacante <strong style="color:#fff">"${titulo}"</strong> se marcará como suspendida y dejará de mostrarse como activa.</span>`,
+      html: `<span>La vacante <strong style="color:#fff">"${escapeHtml(titulo)}"</strong> se marcará como suspendida y dejará de mostrarse como activa.</span>`,
       confirmText: 'Suspender vacante',
       confirmColor: '#dc2626',
       icon: 'warning'

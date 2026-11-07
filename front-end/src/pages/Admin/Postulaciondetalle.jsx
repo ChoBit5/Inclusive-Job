@@ -5,6 +5,7 @@ import { Badge, Button, ErrorBanner, Select } from '../../components/Admin/UI';
 import { usePostulacionAcciones, usePostulacionDetalle } from '../../hooks/Admin/useDomain.js';
 import { ENDPOINTS } from '../../hooks/Admin/apiAdmin.js';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 import PdfPreviewModal from '../../components/PdfPreviewModal';
 const ESTADO_BADGE = {
   pendiente: 'warning',
@@ -121,8 +122,8 @@ export default function PostulacionDetalle() {
       await refetch();
       setEstado('');
       successAlert('Estado actualizado', 'La postulación fue actualizada correctamente.');
-    } catch {
-      errorAlert('Error', 'No se pudo actualizar el estado de la postulación.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo actualizar el estado de la postulación.'));
     } finally {
       setSaving(false);
     }

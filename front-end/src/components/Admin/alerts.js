@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
 const BASE = {
   background: '#1e293b',
   color: '#f8fafc',
@@ -170,7 +171,7 @@ export async function confirmDelete(entityName = 'este elemento', theme = null) 
   const entityColor = isLightTheme ? theme?.textPrimary || '#0f172a' : '#fff';
   return confirmAction({
     title: '¿Eliminar?',
-    html: `<span>¿Seguro que deseas eliminar <strong style="color:${entityColor}">${entityName}</strong>? Esta acción no se puede deshacer.</span>`,
+    html: `<span>¿Seguro que deseas eliminar <strong style="color:${entityColor}">${escapeHtml(entityName)}</strong>? Esta acción no se puede deshacer.</span>`,
     confirmText: 'Sí, eliminar',
     confirmColor: '#dc2626',
     icon: 'warning',
@@ -180,7 +181,7 @@ export async function confirmDelete(entityName = 'este elemento', theme = null) 
 export async function confirmSuspend(entityName = '') {
   return confirmAction({
     title: '¿Suspender?',
-    html: `<span>Se suspenderá el acceso de <strong style="color:#fff">${entityName}</strong>.</span>`,
+    html: `<span>Se suspenderá el acceso de <strong style="color:#fff">${escapeHtml(entityName)}</strong>.</span>`,
     confirmText: 'Suspender',
     confirmColor: '#d97706',
     icon: 'warning'
@@ -189,7 +190,7 @@ export async function confirmSuspend(entityName = '') {
 export async function confirmApprove(entityName = '') {
   return confirmAction({
     title: '¿Aprobar?',
-    html: `<span><strong style="color:#fff">${entityName}</strong> podrá operar en la plataforma.</span>`,
+    html: `<span><strong style="color:#fff">${escapeHtml(entityName)}</strong> podrá operar en la plataforma.</span>`,
     confirmText: '✓ Aprobar',
     confirmColor: '#16a34a',
     icon: 'question'
@@ -198,7 +199,7 @@ export async function confirmApprove(entityName = '') {
 export async function confirmReject(entityName = '') {
   return confirmAction({
     title: '¿Rechazar?',
-    html: `<span>Se rechazará a <strong style="color:#fff">${entityName}</strong>.</span>`,
+    html: `<span>Se rechazará a <strong style="color:#fff">${escapeHtml(entityName)}</strong>.</span>`,
     confirmText: 'Rechazar',
     confirmColor: '#dc2626',
     icon: 'warning'

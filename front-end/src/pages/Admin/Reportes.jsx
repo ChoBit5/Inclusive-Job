@@ -7,6 +7,8 @@ import Pagination from '../../components/Admin/Pagination';
 import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
 import { useReporteAcciones, useReportes } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, confirmTextareaAction, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 const LIMITE = 15;
 const ESTADO_BADGE = {
   activa: 'success',
@@ -76,7 +78,7 @@ export default function Reportes() {
     const vacante = getVacante(row);
     const ok = await confirmAction({
       title: 'Ignorar reporte',
-      html: `<span>El reporte sobre <strong style="color:#fff">"${vacante}"</strong> sera descartado. La vacante conservara su estado actual.</span>`,
+      html: `<span>El reporte sobre <strong style="color:#fff">"${escapeHtml(vacante)}"</strong> sera descartado. La vacante conservara su estado actual.</span>`,
       confirmText: 'Ignorar',
       confirmColor: '#475569',
       icon: 'info'
@@ -87,8 +89,8 @@ export default function Reportes() {
       await ignorar(id);
       await refetch();
       successAlert('Reporte ignorado', 'El reporte fue descartado.');
-    } catch {
-      errorAlert('Error', 'No se pudo ignorar el reporte.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo ignorar el reporte.'));
     } finally {
       setActionLoading(null);
     }
@@ -98,7 +100,7 @@ export default function Reportes() {
     const vacante = getVacante(row);
     const explicacion = await confirmTextareaAction({
       title: 'Suspender vacante reportada',
-      html: `<span>La vacante <strong style="color:#fff">"${vacante}"</strong> se marcará como suspendida y se cerrarán sus reportes asociados. Esta explicación se enviará al reclutador como aviso formal.</span>`,
+      html: `<span>La vacante <strong style="color:#fff">"${escapeHtml(vacante)}"</strong> se marcará como suspendida y se cerrarán sus reportes asociados. Esta explicación se enviará al reclutador como aviso formal.</span>`,
       inputLabel: 'Explicacion para el reclutador',
       inputPlaceholder: 'Ejemplo: La vacante incumple las politicas porque...',
       confirmText: 'Suspender vacante',
@@ -113,8 +115,8 @@ export default function Reportes() {
       });
       await refetch();
       successAlert('Vacante suspendida', `"${vacante}" fue suspendida y se avisó al reclutador.`);
-    } catch {
-      errorAlert('Error', 'No se pudo suspender la vacante.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo suspender la vacante.'));
     } finally {
       setActionLoading(null);
     }

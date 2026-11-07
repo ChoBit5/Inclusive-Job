@@ -5,6 +5,7 @@ import Table from '../../components/Admin/Table';
 import Modal, { ModalFooter } from '../../components/Admin/Modal';
 import { useDiscapacidadAcciones, useDiscapacidades } from '../../hooks/Admin/useDomain.js';
 import { confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 const EMPTY_FORM = {
   nombre: '',
   descripcion: ''
@@ -96,8 +97,8 @@ export default function Discapacidades() {
         await successAlert('Actualizada', `"${cleanForm.nombre}" fue actualizada.`);
       }
       closeModal();
-    } catch {
-      await errorAlert('Error', 'No se pudo guardar el tipo de discapacidad.');
+    } catch (err) {
+      await errorAlert('Error', mensajeErrorServidor(err, 'No se pudo guardar el tipo de discapacidad.'));
     } finally {
       setSaving(false);
     }
@@ -112,8 +113,8 @@ export default function Discapacidades() {
       await eliminar(id);
       await refetch();
       await successAlert('Eliminada', `"${nombre}" fue eliminada del catálogo.`);
-    } catch {
-      await errorAlert('Error', 'No se pudo eliminar. Puede estar relacionada con usuarios o vacantes.');
+    } catch (err) {
+      await errorAlert('Error', mensajeErrorServidor(err, 'No se pudo eliminar. Puede estar relacionada con usuarios o vacantes.'));
     } finally {
       setDeletingId(null);
     }

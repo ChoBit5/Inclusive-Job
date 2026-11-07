@@ -2,7 +2,7 @@
 // Inicia la sesión PHP del usuario: { correo, password }.
 // Responde {success, rol, csrf}; cuenta desactivada, correo sin verificar
 // (requiere_verificacion) y límite de intentos por IP (429).
-require_once __DIR__ . '/../../config/cors.php';
+require_once __DIR__ . '/../../config/auth.php';
 inclusijob_session_cookie_params();
 session_start();
 inclusijob_cors_headers('POST, OPTIONS', 'Content-Type');
@@ -101,7 +101,7 @@ if ($legacyPasswordOk) {
     }
 }
 
-if ((int)$user["estado"] === 0) {
+if (!inclusijob_estado_activo($user["estado"] ?? null)) {
     echo json_encode([
         "success" => false,
         "message" => "Tu cuenta está desactivada. Contacta a soporte."

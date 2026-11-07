@@ -2,7 +2,7 @@
 // Mantiene, consulta y destruye la sesión PHP.
 // GET sesion.php -> {auth, user} si hay sesión activa (refresca last_activity).
 // POST sesion.php?accion=logout -> destruye la sesión y borra la cookie.
-require_once __DIR__ . '/../../config/cors.php';
+require_once __DIR__ . '/../../config/auth.php';
 inclusijob_session_cookie_params();
 session_start();
 inclusijob_cors_headers('GET, POST, OPTIONS', 'Content-Type');
@@ -51,21 +51,7 @@ if (!isset($_SESSION["last_activity"])) {
 $inactiveTime = time() - $_SESSION["last_activity"];
 
 if ($inactiveTime > $_SESSION["session_timeout"]) {
-    $_SESSION = [];
-
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', [
-            "expires" => time() - 42000,
-            "path" => $params["path"],
-            "domain" => $params["domain"],
-            "secure" => $params["secure"],
-            "httponly" => $params["httponly"],
-            "samesite" => $params["samesite"] ?? INCLUSIJOB_SESSION_SAMESITE,
-        ]);
-    }
-
-    session_destroy();
+    inclusijob_destruir_sesion();
 
     echo json_encode([
         "auth" => false,
@@ -88,6 +74,7 @@ if ($idUsuario > 0) {
                 u.apellidos,
                 u.correo,
                 u.foto_perfil,
+                u.estado,
                 u.id_rol,
                 r.nombre_rol
             FROM usuarios u
@@ -102,7 +89,7 @@ if ($idUsuario > 0) {
         $res = mysqli_stmt_get_result($stmt);
         $user = mysqli_fetch_assoc($res);
 
-        if ($user) {
+        if ($user && inclusijob_estado_activo($user['estado'] ?? null)) {
             $_SESSION["user"] = [
                 "id" => (int)$user["id_usuario"],
                 "rol" => $user["nombre_rol"],
@@ -114,6 +101,13 @@ if ($idUsuario > 0) {
                 "avatar" => $user["foto_perfil"],
                 "id_rol" => (int)$user["id_rol"],
             ];
+        } elseif (!$user || !inclusijob_estado_activo($user['estado'] ?? null)) {
+            inclusijob_destruir_sesion();
+            echo json_encode([
+                "auth" => false,
+                "message" => "Tu sesión ya no está activa. Inicia sesión nuevamente."
+            ]);
+            exit;
         }
     }
 }

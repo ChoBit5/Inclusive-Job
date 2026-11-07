@@ -7,6 +7,8 @@ import Pagination from '../../components/Admin/Pagination';
 import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
 import { useUsuarioAcciones, useUsuarios } from '../../hooks/Admin/useDomain.js';
 import { confirmSuspend, confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 const ROL_BADGE = {
   administrador: 'purple',
   reclutador: 'info',
@@ -98,8 +100,8 @@ export default function Usuarios() {
       await suspender(row.id_usuario);
       await refetch();
       successAlert('Suspendido', `${nombre} ha sido suspendido.`);
-    } catch {
-      errorAlert('Error', 'No se pudo suspender al usuario.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo suspender al usuario.'));
     } finally {
       setActionLoading(null);
     }
@@ -108,7 +110,7 @@ export default function Usuarios() {
     const nombre = nombreCompleto(row);
     const ok = await confirmAction({
       title: '¿Reactivar usuario?',
-      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${nombre}</strong>.</span>`,
+      html: `<span>Se restaurará el acceso de <strong style="color:#fff">${escapeHtml(nombre)}</strong>.</span>`,
       confirmText: 'Reactivar',
       confirmColor: '#16a34a',
       icon: 'question'
@@ -119,8 +121,8 @@ export default function Usuarios() {
       await reactivar(row.id_usuario);
       await refetch();
       successAlert('¡Reactivado!', `${nombre} puede acceder nuevamente.`);
-    } catch {
-      errorAlert('Error', 'No se pudo reactivar al usuario.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo reactivar al usuario.'));
     } finally {
       setActionLoading(null);
     }

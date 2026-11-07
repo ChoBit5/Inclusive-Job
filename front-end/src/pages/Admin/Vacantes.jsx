@@ -7,6 +7,8 @@ import Pagination from '../../components/Admin/Pagination';
 import { useSearch, usePagination } from '../../hooks/Admin/useApi.js';
 import { useVacanteAcciones, useVacantes } from '../../hooks/Admin/useDomain.js';
 import { confirmAction, successAlert, errorAlert } from '../../components/Admin/alerts';
+import { escapeHtml } from '../../hooks/Admin/dashboardHelpers.js';
+import { mensajeErrorServidor } from '../../hooks/Admin/empresasHelpers.js';
 const ESTADO_BADGE = {
   activa: 'success',
   cerrada: 'default',
@@ -112,7 +114,7 @@ export default function Vacantes() {
     const titulo = getTitulo(row);
     const ok = await confirmAction({
       title: 'Cerrar vacante',
-      html: `<span>La vacante <strong style="color:#fff">"${titulo}"</strong> dejara de recibir postulaciones.</span>`,
+      html: `<span>La vacante <strong style="color:#fff">"${escapeHtml(titulo)}"</strong> dejara de recibir postulaciones.</span>`,
       confirmText: 'Cerrar vacante',
       confirmColor: '#475569',
       icon: 'warning'
@@ -123,8 +125,8 @@ export default function Vacantes() {
       await cerrar(id);
       await refetch();
       successAlert('Vacante cerrada', `"${titulo}" ya no recibe postulaciones.`);
-    } catch {
-      errorAlert('Error', 'No se pudo cerrar la vacante.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo cerrar la vacante.'));
     } finally {
       setActionLoading(null);
     }
@@ -134,7 +136,7 @@ export default function Vacantes() {
     const titulo = getTitulo(row);
     const ok = await confirmAction({
       title: 'Suspender vacante',
-      html: `<span>La vacante <strong style="color:#fff">"${titulo}"</strong> se marcará como suspendida y dejará de mostrarse como activa.</span>`,
+      html: `<span>La vacante <strong style="color:#fff">"${escapeHtml(titulo)}"</strong> se marcará como suspendida y dejará de mostrarse como activa.</span>`,
       confirmText: 'Suspender vacante',
       confirmColor: '#dc2626',
       icon: 'warning'
@@ -145,8 +147,8 @@ export default function Vacantes() {
       await eliminar(id);
       await refetch();
       successAlert('Vacante suspendida', 'La vacante ha sido suspendida.');
-    } catch {
-      errorAlert('Error', 'No se pudo suspender la vacante.');
+    } catch (err) {
+      errorAlert('Error', mensajeErrorServidor(err, 'No se pudo suspender la vacante.'));
     } finally {
       setActionLoading(null);
     }
