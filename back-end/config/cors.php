@@ -6,7 +6,7 @@
 |--------------------------------------------------------------------------
 
 */
-const INCLUSIJOB_FRONTEND_ORIGIN = 'https://inclusive-job-pi.vercel.app';
+const INCLUSIJOB_FRONTEND_ORIGIN = 'http://localhost:5173/';
 const INCLUSIJOB_FRONTEND_URL = INCLUSIJOB_FRONTEND_ORIGIN . '/';
 
 /*
