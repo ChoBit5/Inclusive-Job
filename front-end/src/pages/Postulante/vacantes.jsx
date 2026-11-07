@@ -16,8 +16,10 @@ import {
   getVacantesErrorMessage,
   modalidadMatches,
   normalizeRequisitos,
+  resolveReporteState,
   resolvePostulacionState,
   resolveVacanteFromQuery,
+  validateReporteMotivo,
 } from '../../hooks/Postulante/vacantesHelpers.js';
 function formatFecha(iso) {
   if (!iso) return '—';
@@ -137,19 +139,22 @@ export function ModalReporte({
   useFocusTrap({ open: Boolean(vacante), containerRef: dialogRef, onClose });
   const motivosSugeridos = ['Información falsa o engañosa', 'Oferta discriminatoria', 'Requisitos no relacionados con el puesto', 'Empresa o contacto sospechoso', 'Contenido inapropiado'];
   const handleEnviar = async () => {
-    if (!motivo.trim()) {
-      setError('Por favor describe el motivo del reporte.');
+    if (enviando) return;
+    const motivoError = validateReporteMotivo(motivo);
+    if (motivoError) {
+      setError(motivoError);
       return;
     }
     setEnviando(true);
     setError('');
     try {
       const json = await reportarVacante(vacante.id_vacante, motivo.trim());
-      if (json.ok) {
+      const resultado = resolveReporteState(json);
+      if (resultado.status === 'success') {
         onReportado(vacante.id_vacante);
         onClose();
       } else {
-        setError(json.message ?? json.msg ?? 'No se pudo enviar el reporte.');
+        setError(resultado.message);
       }
     } catch {
       setError('Error de conexión.');

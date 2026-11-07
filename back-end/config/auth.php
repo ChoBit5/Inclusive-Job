@@ -109,7 +109,8 @@ if (!function_exists('requerirSesion')) {
 
         if (!inclusijob_usuario_activo((int)$_SESSION['user']['id'])) {
             inclusijob_destruir_sesion();
-            http_response_code(401);
+            $inactiveStatus = (($compatibilidad['inactive_status'] ?? 401) === 403) ? 403 : 401;
+            http_response_code($inactiveStatus);
             $respuesta = [
                 "success" => false,
                 "message" => "Tu sesión ya no está activa. Inicia sesión nuevamente.",

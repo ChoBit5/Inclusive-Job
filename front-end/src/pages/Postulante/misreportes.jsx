@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, Eye, X, Briefcase, Star, Calendar, Accessibility, Bookmark, CheckCircle } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { postulantTheme as t } from '../../components/Portal/portalTheme';
 import { postulantNav } from '../../components/Portal/navItems';
 import { useReportesPostulante } from '../../hooks/Postulante/useDomain.js';
+import {
+  resolveMisReportesState,
+  resolveReporteActionState,
+  validateReporteMotivo,
+} from '../../hooks/Postulante/vacantesHelpers.js';
+import { useFocusTrap } from '../../components/useFocusTrap.js';
 import { confirmAction, confirmDelete, successAlert, errorAlert } from '../../components/Admin/alerts';
 const MOCK_USER = {
   nombre: 'Luis',
@@ -59,12 +65,14 @@ function ModalReporte({
   postulacion,
   onClose
 }) {
+  const dialogRef = useRef(null);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+  useFocusTrap({ open: Boolean(postulacion), containerRef: dialogRef, onClose });
   if (!postulacion) return null;
   return <div onClick={onClose} style={{
     position: 'fixed',
@@ -76,7 +84,7 @@ function ModalReporte({
     justifyContent: 'center',
     padding: '20px'
   }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="reporte-detalle-title" tabIndex={-1} onClick={e => e.stopPropagation()} style={{
       background: '#fff',
       borderRadius: '20px',
       position: 'relative',
@@ -124,7 +132,7 @@ function ModalReporte({
               <div style={{
               flex: 1
             }}>
-                <h2 style={{
+                <h2 id="reporte-detalle-title" style={{
                 margin: '0 0 3px',
                 fontSize: '19px',
                 fontWeight: 500,
@@ -422,15 +430,19 @@ function ModalReporte({
 function ModalEditarReporte({
   reporte,
   onClose,
-  onSave
+  onSave,
+  loading = false,
+  error = ''
 }) {
   const [motivo, setMotivo] = useState(reporte?.motivo || '');
+  const dialogRef = useRef(null);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
+  useFocusTrap({ open: Boolean(reporte), containerRef: dialogRef, onClose });
   if (!reporte) return null;
   return <div onClick={onClose} style={{
     position: 'fixed',
@@ -444,7 +456,7 @@ function ModalEditarReporte({
     padding: '20px'
   }}>
 
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="editar-reporte-title" tabIndex={-1} onClick={e => e.stopPropagation()} style={{
       width: '100%',
       maxWidth: '650px',
       background: '#fff',
@@ -502,7 +514,7 @@ function ModalEditarReporte({
               fontSize: '26px',
               fontWeight: 800
             }}>
-                Editar reporte
+              <span id="editar-reporte-title">Editar reporte</span>
               </h2>
 
               <p style={{
@@ -568,7 +580,7 @@ function ModalEditarReporte({
           
           <div>
 
-            <label style={{
+            <label htmlFor="editar-reporte-motivo" style={{
             display: 'block',
             marginBottom: '8px',
             fontWeight: 700,
@@ -577,7 +589,7 @@ function ModalEditarReporte({
               Motivo del reporte
             </label>
 
-            <textarea value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Describe el motivo..." style={{
+            <textarea id="editar-reporte-motivo" value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Describe el motivo..." maxLength={500} aria-invalid={Boolean(error)} aria-describedby={error ? 'editar-reporte-error' : undefined} style={{
             width: '100%',
             minHeight: '180px',
             resize: 'vertical',
@@ -599,6 +611,12 @@ function ModalEditarReporte({
           }}>
               {motivo.length} caracteres
             </div>
+            {error && <p id="editar-reporte-error" role="alert" aria-live="assertive" style={{
+            margin: '8px 0 0',
+            color: '#dc2626',
+            fontSize: '12px',
+            fontWeight: 600
+          }}>{error}</p>}
 
           </div>
 
@@ -625,7 +643,7 @@ function ModalEditarReporte({
             Cancelar
           </button>
 
-          <button onClick={() => onSave(motivo)} style={{
+          <button onClick={() => onSave(motivo)} disabled={loading} style={{
           height: '46px',
           padding: '0 22px',
           borderRadius: '12px',
@@ -633,13 +651,14 @@ function ModalEditarReporte({
           background: 'linear-gradient(135deg,#2563eb,#0ea5e9)',
           color: '#fff',
           fontWeight: 700,
-          cursor: 'pointer',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? .7 : 1,
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
         }}>
             <CheckCircle size={15} />
-            Guardar cambios
+            {loading ? 'Guardando...' : 'Guardar cambios'}
           </button>
 
         </div>
@@ -672,21 +691,32 @@ export default function PostulanteDashboard() {
   const [busqueda, setBusqueda] = useState('');
   const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
   const [modalEditar, setModalEditar] = useState(null);
+  const [error, setError] = useState('');
+  const [accionError, setAccionError] = useState('');
+  const [loadingAccion, setLoadingAccion] = useState(false);
+  const [accionId, setAccionId] = useState(null);
   async function eliminarReporte(id) {
+    if (loadingAccion) return;
+    setLoadingAccion(true);
+    setAccionId(id);
+    setAccionError('');
     try {
       const data = await eliminarReporteApi(id);
-      if (data.ok) {
+      const resultado = resolveReporteActionState(data);
+      if (resultado.status === 'success') {
         setReportes(prev => prev.filter(r => r.id !== id));
         if (reporteSeleccionado?.id === id) {
           setReporteSeleccionado(null);
         }
         await successAlert('Reporte eliminado', 'El reporte se eliminó correctamente.', t);
       } else {
-        await errorAlert('No se pudo eliminar', data.msg, t);
+        await errorAlert('No se pudo eliminar', resultado.message, t);
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       await errorAlert('Error de conexión', 'No se pudo conectar con el servidor.', t);
+    } finally {
+      setLoadingAccion(false);
+      setAccionId(null);
     }
   }
   async function confirmarEliminarReporte(id) {
@@ -695,6 +725,12 @@ export default function PostulanteDashboard() {
     await eliminarReporte(id);
   }
   async function editarReporte(id, motivo) {
+    if (loadingAccion) return;
+    const motivoError = validateReporteMotivo(motivo);
+    if (motivoError) {
+      setAccionError(motivoError);
+      return;
+    }
     const confirmado = await confirmAction({
       title: '¿Guardar cambios?',
       html: 'Se actualizará el motivo del reporte.',
@@ -704,9 +740,13 @@ export default function PostulanteDashboard() {
       theme: t
     });
     if (!confirmado) return;
+    setLoadingAccion(true);
+    setAccionId(id);
+    setAccionError('');
     try {
       const data = await editarReporteApi(id, motivo);
-      if (data.ok) {
+      const resultado = resolveReporteActionState(data);
+      if (resultado.status === 'success') {
         setReportes(prev => prev.map(r => r.id === id ? {
           ...r,
           motivo
@@ -714,28 +754,36 @@ export default function PostulanteDashboard() {
         setModalEditar(null);
         await successAlert('Reporte actualizado', 'Los cambios fueron guardados correctamente.', t);
       } else {
-        console.log(data.msg);
+        setAccionError(resultado.message);
       }
-    } catch (error) {
-      console.log(error);
-      await errorAlert('Error de conexión', 'No se pudo conectar con el servidor.', t);
+    } catch {
+      setAccionError('Error de conexión. No se pudo conectar con el servidor.');
+    } finally {
+      setLoadingAccion(false);
+      setAccionId(null);
     }
   }
-  useEffect(() => {
-    cargarReportes();
-  }, []);
-  async function cargarReportes() {
+  const cargarReportes = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await listarReportes();
-      if (data.ok) {
-        setReportes(data.data);
+      const resultado = resolveMisReportesState(data);
+      if (resultado.status === 'success') {
+        setReportes(resultado.reportes);
+      } else {
+        setError(resultado.message);
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
+      setError('Error de conexión. No se pudieron cargar tus reportes.');
     } finally {
       setLoading(false);
     }
-  }
+  }, [listarReportes]);
+
+  useEffect(() => {
+    cargarReportes();
+  }, [cargarReportes]);
   const reportesFiltrados = reportes.filter(r => {
     const texto = `
       ${r.vacante || ''}
@@ -750,10 +798,13 @@ export default function PostulanteDashboard() {
       
       {reporteSeleccionado && <ModalReporte postulacion={reporteSeleccionado} onClose={() => setReporteSeleccionado(null)} />}
 
-      {modalEditar && <ModalEditarReporte reporte={modalEditar} onClose={() => setModalEditar(null)} onSave={motivo => {
-      setModalEditar(null);
-      editarReporte(modalEditar.id, motivo);
-    }} />}
+      {modalEditar && <ModalEditarReporte
+      reporte={modalEditar}
+      onClose={() => setModalEditar(null)}
+      onSave={motivo => editarReporte(modalEditar.id, motivo)}
+      loading={loadingAccion && accionId === modalEditar.id}
+      error={accionError}
+    />}
 
       <div style={{
       maxWidth: '1400px',
@@ -818,7 +869,23 @@ export default function PostulanteDashboard() {
 
           {loading ? <div style={{
           padding: '30px'
-        }}>Cargando reportes...</div> : reportesFiltrados.length === 0 ? <div style={{
+        }}>Cargando reportes...</div> : error ? <div role="alert" style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#b91c1c'
+        }}>
+              <p style={{ margin: '0 0 14px' }}>{error}</p>
+              <button type="button" onClick={cargarReportes} style={{
+              minHeight: '44px',
+              padding: '0 16px',
+              border: 'none',
+              borderRadius: '10px',
+              background: '#2563eb',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}>Reintentar</button>
+            </div> : reportesFiltrados.length === 0 ? <div style={{
           padding: '40px',
           textAlign: 'center',
           color: t.textMuted
@@ -924,7 +991,10 @@ export default function PostulanteDashboard() {
                         </button>
 
                         
-                        <button onClick={() => setModalEditar(r)} style={{
+                        <button type="button" aria-label={`Editar reporte de ${r.vacante}`} onClick={() => {
+                      setAccionError('');
+                      setModalEditar(r);
+                    }} disabled={loadingAccion} style={{
                       width: '40px',
                       height: '40px',
                       border: `1px solid #93c5fd`,
@@ -936,7 +1006,7 @@ export default function PostulanteDashboard() {
                         </button>
 
                         
-                        <button onClick={() => confirmarEliminarReporte(r.id)} style={{
+                        <button type="button" aria-label={`Eliminar reporte de ${r.vacante}`} onClick={() => confirmarEliminarReporte(r.id)} disabled={loadingAccion} style={{
                       width: '40px',
                       height: '40px',
                       border: `1px solid #fecaca`,

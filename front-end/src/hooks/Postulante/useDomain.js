@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { requestPostulante, useApiAction, useFetch } from './useApi';
 import { BACKEND_URL, ENDPOINTS } from './apiPostulante';
 import { readCvErrorMessage } from './cvHelpers.js';
+import { buildReportePayload } from './vacantesHelpers.js';
 
 async function requestData(url, options) {
   const { res, data } = await requestPostulante(url, options);
@@ -151,7 +152,7 @@ export function useVacantesPostulante() {
     requestData(ENDPOINTS.postulaciones.recurso, { method: 'POST', body: { id_vacante: idVacante } })
   ), []);
   const reportarVacante = useCallback((idVacante, motivo) => (
-    requestData(ENDPOINTS.reportes.recurso, { method: 'POST', body: { id_vacante: idVacante, motivo } })
+    requestData(ENDPOINTS.reportes.recurso, { method: 'POST', body: buildReportePayload(idVacante, motivo) })
   ), []);
 
   return { listarVacantes, postularse, reportarVacante };

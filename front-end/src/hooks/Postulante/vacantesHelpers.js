@@ -141,3 +141,85 @@ export function resolvePostulacionState(response = {}, { enviando = false, postu
 
   return { status: 'idle', message: '', disabled: false };
 }
+
+export function buildReportePayload(idVacante, motivo) {
+  return {
+    id_vacante: idVacante,
+    motivo: String(motivo ?? '').trim(),
+  };
+}
+
+export function validateReporteMotivo(value) {
+  const motivo = String(value ?? '').trim();
+  if (!motivo) return 'Por favor describe el motivo del reporte.';
+  if (motivo.length > 500) return 'El motivo del reporte no debe superar 500 caracteres.';
+  return '';
+}
+
+export function resolveReporteState(response = {}, { enviando = false, reportada = false } = {}) {
+  if (enviando) {
+    return { status: 'sending', message: 'Enviando...', disabled: true };
+  }
+
+  if (reportada || (response?.httpOk !== false && response?.ok === true)) {
+    return {
+      status: 'success',
+      message: response?.msg || response?.message || 'Reporte enviado.',
+      disabled: true,
+    };
+  }
+
+  if (response?.httpOk === false || response?.ok === false) {
+    return {
+      status: 'error',
+      message: response?.msg || response?.message || 'No se pudo enviar el reporte.',
+      disabled: false,
+    };
+  }
+
+  return { status: 'idle', message: '', disabled: false };
+}
+
+export function resolveMisReportesState(response = {}) {
+  if (response?.httpOk === false || response?.ok === false) {
+    return {
+      status: 'error',
+      reportes: [],
+      message: response?.msg || response?.message || 'No se pudieron obtener los reportes.',
+    };
+  }
+
+  if (response?.ok === true && Array.isArray(response?.data)) {
+    return { status: 'success', reportes: response.data, message: '' };
+  }
+
+  return {
+    status: 'error',
+    reportes: [],
+    message: 'La respuesta de reportes no es válida.',
+  };
+}
+
+export function resolveReporteActionState(response = {}, { procesando = false } = {}) {
+  if (procesando) {
+    return { status: 'sending', message: 'Procesando...', disabled: true };
+  }
+
+  if (response?.httpOk === false || response?.ok === false) {
+    return {
+      status: 'error',
+      message: response?.msg || response?.message || 'No se pudo completar la acción.',
+      disabled: false,
+    };
+  }
+
+  if (response?.ok === true) {
+    return {
+      status: 'success',
+      message: response?.msg || response?.message || 'Operación completada.',
+      disabled: false,
+    };
+  }
+
+  return { status: 'error', message: 'La respuesta de reportes no es válida.', disabled: false };
+}
