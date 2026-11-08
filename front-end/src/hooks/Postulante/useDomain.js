@@ -58,6 +58,18 @@ function parseJsonFromResponseText(text) {
   );
 }
 
+function readChatErrorMessage(responseText, fallback) {
+  const raw = String(responseText ?? '').trim();
+  if (!raw) return fallback;
+
+  try {
+    const data = JSON.parse(raw);
+    return data.message || data.msg || fallback;
+  } catch {
+    return raw.slice(0, 220);
+  }
+}
+
 async function obtenerCvBlobPostulante() {
   const res = await fetch(ENDPOINTS.documentos.cv, {
     method: 'GET',
@@ -231,7 +243,7 @@ export function usePostulanteChat() {
       const respuesta = await res.text();
 
       if (!res.ok) {
-        throw new Error(respuesta || `Error ${res.status}: ${res.statusText}`);
+        throw new Error(readChatErrorMessage(respuesta, `Error ${res.status}: ${res.statusText}`));
       }
 
       return respuesta;

@@ -11,3 +11,8 @@ const INCLUSIJOB_SMTP_FROM_NAME = 'InclusiJob';
 
 // Google OAuth (features 5a y 5b)
 const INCLUSIJOB_GOOGLE_CLIENT_ID = '1044204256727-d5lr20p917ditb3h27u539q2hoerpbnb.apps.googleusercontent.com';
+
+// Groq (feature 27)
+const INCLUSIJOB_GROQ_API_KEY = 'PASTE_YOUR_KEY_HERE';
+const INCLUSIJOB_GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const INCLUSIJOB_GROQ_MODEL = 'qwen/qwen3.8-27b';

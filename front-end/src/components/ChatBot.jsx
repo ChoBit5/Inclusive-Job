@@ -303,7 +303,8 @@ export default function ChatBubble() {
     loading: sendingMessage
   } = usePostulanteChat();
   const {
-    cargarHistorial
+    cargarHistorial,
+    error: historialError
   } = usePostulanteChatHistorial();
   const {
     recomendarVacantes,
@@ -375,6 +376,7 @@ export default function ChatBubble() {
       }]);
       if (!openRef.current) setHasUnread(true);
     } catch {
+      setInput(text);
       setMessages(prev => [...prev, {
         sender: "bot",
         text: "Ocurrio un error, intenta de nuevo."
@@ -648,6 +650,10 @@ export default function ChatBubble() {
                     Ver recomendaciones completas
                   </button>}
               </div>)}
+
+            {historialError && <div role="alert" style={styles.historyError}>
+              {historialError}
+            </div>}
 
             {isSending && <div style={styles.typingRow}>
                 <span style={{
@@ -1085,6 +1091,16 @@ const styles = {
     color: "#fff",
     borderBottomRightRadius: 7,
     boxShadow: "0 12px 28px rgba(37,99,235,0.22)"
+  },
+  historyError: {
+    alignSelf: "stretch",
+    color: "#991b1b",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    padding: "9px 11px",
+    fontSize: 12,
+    lineHeight: 1.4
   },
   typingRow: {
     alignSelf: "flex-start",
