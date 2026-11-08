@@ -29,8 +29,8 @@ define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'u319109241_Inclusi
 | Sesion / cookies
 |--------------------------------------------------------------------------
 */
-define('INCLUSIJOB_SESSION_SECURE', filter_var(getenv('INCLUSIJOB_SESSION_SECURE') ?: 'false', FILTER_VALIDATE_BOOLEAN));
-define('INCLUSIJOB_SESSION_SAMESITE', getenv('INCLUSIJOB_SESSION_SAMESITE') ?: 'Lax');
+define('INCLUSIJOB_SESSION_SECURE', filter_var(getenv('INCLUSIJOB_SESSION_SECURE') ?: 'true', FILTER_VALIDATE_BOOLEAN));
+define('INCLUSIJOB_SESSION_SAMESITE', getenv('INCLUSIJOB_SESSION_SAMESITE') ?: 'None');
 
 function inclusijob_frontend_url(string $path = ''): string
 {

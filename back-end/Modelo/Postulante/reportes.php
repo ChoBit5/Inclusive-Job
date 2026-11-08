@@ -178,13 +178,13 @@ try {
         reportes_responder(200, '', true, $reportes);
     }
 
-    $rawIdReporte = is_array($body) ? ($body['id_reporte'] ?? null) : null;
-    $idReporte = reportes_id($rawIdReporte);
-    if ($idReporte === false) {
-        reportes_responder(400, 'ID de reporte invalido.');
-    }
-
     if ($method === 'PUT') {
+        $rawIdReporte = is_array($body) ? ($body['id_reporte'] ?? null) : null;
+        $idReporte = reportes_id($rawIdReporte);
+        if ($idReporte === false) {
+            reportes_responder(400, 'ID de reporte invalido.');
+        }
+
         $motivo = reportes_motivo(is_array($body) ? ($body['motivo'] ?? null) : null);
         if ($motivo === '') {
             reportes_responder(400, 'El motivo del reporte es requerido.');
@@ -216,6 +216,12 @@ try {
     }
 
     if ($method === 'DELETE') {
+        $rawIdReporte = is_array($body) ? ($body['id_reporte'] ?? null) : null;
+        $idReporte = reportes_id($rawIdReporte);
+        if ($idReporte === false) {
+            reportes_responder(400, 'ID de reporte invalido.');
+        }
+
         if (!mysqli_begin_transaction($con)) {
             throw new RuntimeException('No se pudo iniciar la transaccion del reporte.');
         }
