@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { postulantTheme, reclutadorTheme } from "../Portal/portalTheme";
+import { formatChatMessage } from "./messageFormatting.js";
 
 const THEMES = {
   postulante: postulantTheme,
@@ -41,6 +42,32 @@ function SendIcon({ size = 16 }) {
 function TypingDots({ theme }) {
   return <div className="chatbot-typing-dots" aria-label="El asistente está escribiendo">
     {[0, 1, 2].map(index => <span key={index} style={{ background: theme.textMuted, animationDelay: `${index * 0.2}s` }} />)}
+  </div>;
+}
+
+function FormattedMessage({ content, theme }) {
+  const blocks = formatChatMessage(content);
+  const renderInline = (tokens, prefix) => tokens.map((token, index) => {
+    const key = `${prefix}-${index}`;
+    if (token.type === "strong") return <strong key={key}>{token.value}</strong>;
+    if (token.type === "em") return <em key={key}>{token.value}</em>;
+    if (token.type === "code") return <code key={key} style={{ padding: "1px 5px", borderRadius: "5px", background: theme.accentSoft, color: theme.accent, fontSize: "0.92em" }}>{token.value}</code>;
+    return <span key={key}>{token.value}</span>;
+  });
+
+  return <div className="chatbot-formatted-message" style={{ display: "grid", gap: "9px", whiteSpace: "pre-line" }}>
+    {blocks.map((block, index) => {
+      const contentNodes = renderInline(block.content ?? [], `block-${index}`);
+      if (block.type === "heading") {
+        const Heading = block.level === 1 ? "h3" : "h4";
+        return <Heading key={index} style={{ margin: 0, fontSize: block.level === 1 ? "14px" : "13px", lineHeight: 1.3, fontWeight: 750, color: theme.textPrimary }}>{contentNodes}</Heading>;
+      }
+      if (block.type === "unordered-list" || block.type === "ordered-list") {
+        const List = block.type === "unordered-list" ? "ul" : "ol";
+        return <List key={index} style={{ margin: 0, paddingLeft: "20px", display: "grid", gap: "5px" }}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{renderInline(item, `block-${index}-item-${itemIndex}`)}</li>)}</List>;
+      }
+      return <p key={index} style={{ margin: 0 }}>{contentNodes}</p>;
+    })}
   </div>;
 }
 
@@ -225,7 +252,7 @@ export default function ChatbotUI({
           return <div key={message.id ?? index} className="chatbot-message" style={{ display: "flex", alignItems: "flex-end", gap: "8px", justifyContent: isUser ? "flex-end" : "flex-start", animation: "chatbotMessageIn 0.28s cubic-bezier(0.22,1,0.36,1) both" }}>
             {!isUser && <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0, background: theme.accentSoft, border: `1px solid ${theme.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}><BotIcon size={14} color={theme.accent} /></div>}
             <div style={{ maxWidth: "78%", padding: "10px 14px", borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px", fontSize: "13px", lineHeight: "1.55", whiteSpace: "pre-line", overflowWrap: "anywhere", background: isUser ? theme.gradient : message.error ? `${theme.danger}20` : theme.bgElevated, color: isUser ? "#fff" : message.error ? theme.danger : theme.textPrimary, border: isUser ? "none" : message.error ? `1px solid ${theme.danger}55` : `1px solid ${theme.border}`, boxShadow: isUser ? `0 4px 12px ${theme.accentGlow}` : "0 1px 4px rgba(0,0,0,0.06)" }}>
-              {message.content}
+              {isUser ? message.content : <FormattedMessage content={message.content} theme={theme} />}
               {renderMessageContent?.(message)}
             </div>
           </div>;

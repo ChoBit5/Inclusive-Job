@@ -281,6 +281,7 @@ export default function PostulanteDashboard() {
       if (data.ok) {
         await successAlert('CV actualizado', 'Tu currículum se actualizó correctamente.', t);
         setTieneCV(true);
+        setAnalisisCV(null);
         setCvError('');
         const blob = await obtenerCvBlob();
         const nextUrl = URL.createObjectURL(blob);
@@ -775,6 +776,45 @@ export default function PostulanteDashboard() {
               boxShadow: '0 12px 26px rgba(234,88,12,.08)'
             }}>
                     Estas recomendaciones fueron generadas con IA y pueden contener errores. Revisalas antes de modificar tu CV; el analisis usa texto extraido del PDF, no el formato visual final.
+                  </div>
+
+                  <div style={{
+              padding: '16px',
+              borderRadius: '18px',
+              background: '#fff',
+              border: '1px solid #dbeafe',
+              boxShadow: '0 10px 24px rgba(37,99,235,.06)'
+            }}>
+                    <h3 style={{
+                margin: '0 0 10px',
+                fontSize: '14px',
+                color: t.textPrimary
+              }}>Perfil profesional detectado</h3>
+                    <p style={{
+                margin: 0,
+                color: t.textSecondary,
+                fontSize: '13px',
+                lineHeight: 1.6
+              }}>
+                      <strong>Ocupacion:</strong> {analisisCV.perfil_objetivo?.ocupacion_detectada || 'No se pudo determinar con suficiente evidencia.'}
+                    </p>
+                    <p style={{
+                margin: '6px 0 0',
+                color: t.textSecondary,
+                fontSize: '13px',
+                lineHeight: 1.6
+              }}>
+                      <strong>Objetivo laboral:</strong> {analisisCV.perfil_objetivo?.ocupacion_objetivo || 'No especificado'} · <strong>Confianza:</strong> {analisisCV.perfil_objetivo?.confianza || 'baja'}
+                    </p>
+                    {analisisCV.perfil_objetivo?.evidencia?.length > 0 && <ul style={{
+                margin: '10px 0 0',
+                paddingLeft: '18px',
+                color: t.textSecondary,
+                fontSize: '13px',
+                lineHeight: 1.6
+              }}>
+                      {analisisCV.perfil_objetivo.evidencia.map(item => <li key={item}>{item}</li>)}
+                    </ul>}
                   </div>
 
                   <div style={{
