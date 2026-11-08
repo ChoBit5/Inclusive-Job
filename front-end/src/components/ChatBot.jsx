@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAnalisisCvIA, usePostulanteChat, usePostulanteChatHistorial, useRecomendacionVacantesIA, usePostulacionesEntrevistaIA } from "../hooks/Postulante/useDomain.js";
 import EntrevistaModal from "./modal_entrevista";
 import EntrevistaRealModal from "./modal_entrevista_real";
+import ChatbotUI from "./chat/ChatbotUI.jsx";
 const COLORS = {
   primary: "#2563eb",
   primaryDark: "#1e40af",
@@ -22,23 +23,6 @@ const DEFAULT_MESSAGES = [{
 }];
 function cleanAiText(value) {
   return String(value ?? "").replace(/\[INSERTAR % O NUMERO\]/gi, "[PORCENTAJE O METRICA]").replace(/\[INSERTAR % O NÚMERO\]/gi, "[PORCENTAJE O METRICA]").replace(/\[INSERTAR %\]/gi, "[PORCENTAJE O METRICA]").replace(/\[INSERTAR NUMERO\]/gi, "[PORCENTAJE O METRICA]").replace(/\[INSERTAR NÚMERO\]/gi, "[PORCENTAJE O METRICA]").replace(/\[INSERTAR\]/gi, "[PORCENTAJE O METRICA]");
-}
-function ChatIcon() {
-  return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>;
-}
-function CloseIcon({
-  size = 28
-}) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>;
-}
-function SendIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m22 2-7 20-4-9-9-4Z" />
-    </svg>;
 }
 function MicBadgeIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -289,6 +273,7 @@ export default function ChatBubble() {
   const [messages, setMessages] = useState(DEFAULT_MESSAGES);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [entrevista, setEntrevista] = useState({
     open: false,
@@ -318,16 +303,7 @@ export default function ChatBubble() {
     listarPostulaciones,
     loading: loadingPostulaciones
   } = usePostulacionesEntrevistaIA();
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
   const openRef = useRef(open);
-  const quickActionsRef = useRef(null);
-  const quickDragRef = useRef({
-    active: false,
-    startX: 0,
-    scrollLeft: 0,
-    moved: false
-  });
   useEffect(() => {
     openRef.current = open;
   }, [open]);
@@ -346,18 +322,6 @@ export default function ChatBubble() {
       active = false;
     };
   }, [cargarHistorial]);
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
-  }, [messages, typing]);
-  function toggleOpen() {
-    setOpen(prev => {
-      const next = !prev;
-      if (next) setHasUnread(false);
-      return next;
-    });
-  }
   async function handleSend() {
     const text = input.trim();
     if (!text || typing || sendingMessage) return;
@@ -366,7 +330,6 @@ export default function ChatBubble() {
       text
     }]);
     setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
     setTyping(true);
     try {
       const reply = await enviarMensaje(text);
@@ -438,6 +401,7 @@ export default function ChatBubble() {
       setTyping(false);
     }
   }
+
   async function handleSimularEntrevista() {
     if (typing || sendingMessage || recommendingVacantes || reviewingCv || loadingPostulaciones) return;
     setMessages(prev => [...prev, {
@@ -486,66 +450,6 @@ export default function ChatBubble() {
     } finally {
       setTyping(false);
     }
-  }
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
-  function handleInputChange(e) {
-    setInput(e.target.value);
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 90) + "px";
-    }
-  }
-  function handleQuickPointerDown(e) {
-    const el = quickActionsRef.current;
-    if (!el) return;
-    if (e.target.closest("button")) return;
-    quickDragRef.current = {
-      active: true,
-      startX: e.clientX,
-      scrollLeft: el.scrollLeft,
-      moved: false
-    };
-    el.setPointerCapture?.(e.pointerId);
-    el.style.cursor = "grabbing";
-  }
-  function handleQuickPointerMove(e) {
-    const el = quickActionsRef.current;
-    const drag = quickDragRef.current;
-    if (!el || !drag.active) return;
-    e.preventDefault();
-    const delta = e.clientX - drag.startX;
-    if (Math.abs(delta) > 5) {
-      drag.moved = true;
-    }
-    el.scrollLeft = drag.scrollLeft - delta;
-  }
-  function handleQuickPointerEnd(e) {
-    const el = quickActionsRef.current;
-    quickDragRef.current.active = false;
-    if (!el) return;
-    el.releasePointerCapture?.(e.pointerId);
-    el.style.cursor = "grab";
-  }
-  function handleQuickWheel(e) {
-    const el = quickActionsRef.current;
-    if (!el) return;
-    const canScroll = el.scrollWidth > el.clientWidth;
-    if (!canScroll) return;
-    el.scrollLeft += e.deltaY || e.deltaX;
-  }
-  function handleQuickScroll(direction) {
-    const el = quickActionsRef.current;
-    if (!el) return;
-    el.scrollBy({
-      left: direction * 170,
-      behavior: "smooth"
-    });
   }
   function handleOpenVacante(item) {
     const idVacante = getVacanteId(item);
@@ -608,346 +512,80 @@ export default function ChatBubble() {
     if (!openRef.current) setHasUnread(true);
   }
   const isSending = typing || sendingMessage || recommendingVacantes || reviewingCv || loadingPostulaciones;
-  return <>
-      <button type="button" onClick={toggleOpen} aria-label={open ? "Cerrar chat" : "Abrir chat"} style={styles.bubbleBtn}>
-        {open ? <CloseIcon /> : <ChatIcon />}
-        {hasUnread && !open && <span style={styles.badge}>1</span>}
-      </button>
 
-      {open && <div style={styles.window}>
-          <div style={styles.header}>
-            <div style={styles.headerIdentity}>
-              <div style={styles.assistantAvatar}>
-                <ChatIcon />
-              </div>
-              <div>
-                <div style={styles.headerTitle}>
-                  <span style={styles.statusDot} />
-                  Asistente InclusiveJob
-                </div>
-                <div style={styles.headerSubtitle}>
-                  Soporte inteligente para postulantes
-                </div>
-              </div>
-            </div>
-            <button type="button" onClick={toggleOpen} aria-label="Cerrar chat" style={styles.closeBtn}>
-              <CloseIcon size={18} />
-            </button>
-          </div>
-
-          <div style={styles.messagesBox}>
-            {messages.map((m, i) => <div key={i} style={{
-          ...styles.msg,
-          ...(m.sender === "user" ? styles.msgUser : styles.msgBot),
-          ...(m.type === "recommendations" || m.type === "postulaciones-entrevista" || m.type === "entrevista-solicitada" || m.type === "entrevista-real-solicitada" ? styles.msgRecommendations : {})
-        }}>
-                {m.text}
-                {m.type === "recommendations" && <RecommendationCards recomendaciones={m.recomendaciones} onOpenVacante={handleOpenVacante} />}
-                {m.type === "postulaciones-entrevista" && <PostulacionesEntrevistaCards postulaciones={m.postulaciones} onSimular={handleAbrirEntrevista} />}
-                {m.type === "entrevista-solicitada" && <EntrevistaSolicitadaCard vacante={m.vacante} onIniciar={handleAbrirEntrevista} />}
-                {m.type === "entrevista-real-solicitada" && <EntrevistaRealSolicitadaCard vacante={m.vacante} onIniciar={handleAbrirEntrevistaReal} />}
-                {m.type === "cv-analysis" && <button type="button" onClick={handleOpenCertificaciones} style={styles.cvAnalysisButton}>
-                    Ver recomendaciones completas
-                  </button>}
-              </div>)}
-
-            {historialError && <div role="alert" style={styles.historyError}>
-              {historialError}
-            </div>}
-
-            {isSending && <div style={styles.typingRow}>
-                <span style={{
-            ...styles.dot,
-            animationDelay: "0s"
-          }} />
-                <span style={{
-            ...styles.dot,
-            animationDelay: "0.15s"
-          }} />
-                <span style={{
-            ...styles.dot,
-            animationDelay: "0.3s"
-          }} />
-              </div>}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div style={styles.quickActionsShell}>
-            <button type="button" aria-label="Ver preguntas anteriores" className="inclusive-quick-nav" onClick={() => handleQuickScroll(-1)} style={{
-          ...styles.quickNavBtn,
-          left: 8
-        }}>
-              ‹
-            </button>
-
-            <div ref={quickActionsRef} className="inclusive-quick-actions" style={styles.quickActions} onPointerDown={handleQuickPointerDown} onPointerMove={handleQuickPointerMove} onPointerUp={handleQuickPointerEnd} onPointerCancel={handleQuickPointerEnd} onPointerLeave={handleQuickPointerEnd} onWheel={handleQuickWheel}>
-              <button type="button" className="inclusive-quick-action" onClick={handleRecommendVacantes} disabled={isSending} style={{
-            ...styles.quickActionBtn,
-            ...(isSending ? styles.quickActionBtnDisabled : {})
-          }}>
-                <span style={styles.quickActionIcon}>✦</span>
-                <span>Vacantes</span>
-              </button>
-              <button type="button" className="inclusive-quick-action" onClick={handleReviewCv} disabled={isSending} style={{
-            ...styles.quickActionBtn,
-            ...(isSending ? styles.quickActionBtnDisabled : {})
-          }}>
-                <span style={styles.quickActionIcon}>CV</span>
-                <span>Revisar CV</span>
-              </button>
-              <button type="button" className="inclusive-quick-action" onClick={handleSimularEntrevista} disabled={isSending} style={{
-            ...styles.quickActionBtn,
-            ...(isSending ? styles.quickActionBtnDisabled : {})
-          }}>
-                <span style={styles.quickActionIcon}>🎙</span>
-                <span>Entrevista</span>
-              </button>
-              <button type="button" className="inclusive-quick-action" onClick={handleAppHelp} disabled={isSending} style={{
-            ...styles.quickActionBtn,
-            ...(isSending ? styles.quickActionBtnDisabled : {})
-          }}>
-                <span style={styles.quickActionIcon}>?</span>
-                <span>Ayuda</span>
-              </button>
-            </div>
-
-            <button type="button" aria-label="Ver más preguntas" className="inclusive-quick-nav" onClick={() => handleQuickScroll(1)} style={{
-          ...styles.quickNavBtn,
-          right: 8
-        }}>
-              ›
-            </button>
-          </div>
-
-          <div style={styles.inputRow}>
-            <textarea ref={textareaRef} rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder="Escribe un mensaje..." style={styles.input} />
-            <button type="button" onClick={handleSend} disabled={!input.trim() || isSending} aria-label="Enviar mensaje" style={{
-          ...styles.sendBtn,
-          ...(!input.trim() || isSending ? styles.sendBtnDisabled : {})
-        }}>
-              <SendIcon />
-            </button>
-          </div>
-        </div>}
-
-      {entrevista.open && entrevista.vacante && <EntrevistaModal vacante={entrevista.vacante} onClose={handleCerrarEntrevista} onEvaluacionLista={handleEvaluacionEntrevista} />}
-
-      {entrevistaReal.open && entrevistaReal.vacante && <EntrevistaRealModal vacante={entrevistaReal.vacante} onClose={handleCerrarEntrevistaReal} onEvaluacionLista={handleEvaluacionEntrevistaReal} />}
-
-      <style>{`
-        @keyframes chat-window-in {
-          from { opacity: 0; transform: translateY(14px) scale(0.985); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes chat-message-in {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes chat-card-in {
-          from { opacity: 0; transform: translateY(6px) scale(0.99); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes chat-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        @keyframes chat-typing-bounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-        .inclusive-quick-actions::-webkit-scrollbar { height: 5px; }
-        .inclusive-quick-actions::-webkit-scrollbar-track { background: #eff6ff; border-radius: 999px; }
-        .inclusive-quick-actions::-webkit-scrollbar-thumb { background: linear-gradient(90deg,#bfdbfe,#c4b5fd); border-radius: 999px; }
-        .inclusive-quick-actions { scrollbar-width: thin; scrollbar-color: #bfdbfe #eff6ff; }
-        .inclusive-quick-action:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 24px rgba(37,99,235,0.13);
-          border-color: #bfdbfe;
-        }
-        .inclusive-quick-nav:hover {
-          transform: translateY(-50%) scale(1.04);
-          box-shadow: 0 10px 22px rgba(37,99,235,0.18);
-          border-color: #bfdbfe;
-        }
-      `}</style>
+  const normalizedMessages = messages.map((message, index) => ({
+    id: "applicant-" + index,
+    role: message.sender === "user" ? "user" : "assistant",
+    content: message.text ?? "",
+    data: message
+  }));
+  const renderMessageContent = message => {
+    const data = message.data;
+    return <>
+      {data.type === "recommendations" && <RecommendationCards recomendaciones={data.recomendaciones} onOpenVacante={handleOpenVacante} />}
+      {data.type === "postulaciones-entrevista" && <PostulacionesEntrevistaCards postulaciones={data.postulaciones} onSimular={handleAbrirEntrevista} />}
+      {data.type === "entrevista-solicitada" && <EntrevistaSolicitadaCard vacante={data.vacante} onIniciar={handleAbrirEntrevista} />}
+      {data.type === "entrevista-real-solicitada" && <EntrevistaRealSolicitadaCard vacante={data.vacante} onIniciar={handleAbrirEntrevistaReal} />}
+      {data.type === "cv-analysis" && <button type="button" onClick={handleOpenCertificaciones} style={styles.cvAnalysisButton}>Ver recomendaciones completas</button>}
     </>;
+  };
+  const suggestionsVisible = (messages.length === 1 || suggestionsOpen) && !isSending;
+  const suggestions = suggestionsVisible ? <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+    {[{
+      label: "¿Puedes recomendarme vacantes según mi perfil?",
+      action: () => {
+        setSuggestionsOpen(false);
+        handleRecommendVacantes();
+      }
+    }, {
+      label: "¿Puedes revisar mi CV y darme recomendaciones?",
+      action: () => {
+        setSuggestionsOpen(false);
+        handleReviewCv();
+      }
+    }, {
+      label: "¿Podemos practicar una entrevista para una de mis postulaciones?",
+      action: () => {
+        setSuggestionsOpen(false);
+        handleSimularEntrevista();
+      }
+    }, {
+      label: "¿Cómo puedo usar InclusiveJob?",
+      action: () => {
+        setSuggestionsOpen(false);
+        handleAppHelp();
+      }
+    }].map((suggestion, index) => <button key={suggestion.label} type="button" onClick={suggestion.action} style={{ textAlign: "left", fontSize: "12px", padding: "8px 12px", borderRadius: "10px", cursor: "pointer", border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.muted, fontWeight: 500, lineHeight: 1.4, transition: "all 0.15s ease", animation: "chatbotMessageIn 0.3s ease both", animationDelay: `${0.15 + index * 0.06}s` }}>{suggestion.label}</button>)}
+  </div> : null;
+  const suggestionsToggle = messages.length > 1 ? <button type="button" onClick={() => setSuggestionsOpen(value => !value)} disabled={isSending} style={{ width: "100%", padding: "8px 12px", borderRadius: "10px", border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.primaryDark, fontSize: "12px", fontWeight: 600, cursor: isSending ? "not-allowed" : "pointer", opacity: isSending ? 0.65 : 1 }}>{suggestionsOpen ? "Ocultar preguntas" : "Mostrar preguntas"}</button> : null;
+  function handleOpenChange(nextOpen) {
+    setOpen(nextOpen);
+    if (nextOpen) setHasUnread(false);
+  }
+  return <>
+    <ChatbotUI
+      theme="postulante"
+      title="Asistente InclusiveJob"
+      subtitle="Soporte inteligente para postulantes"
+      open={open}
+      onOpenChange={handleOpenChange}
+      messages={normalizedMessages}
+      value={input}
+      onChange={setInput}
+      onSend={handleSend}
+      loading={isSending}
+      historyError={historialError}
+      unread={hasUnread}
+      actions={suggestionsToggle}
+      emptyContent={suggestions}
+      renderMessageContent={renderMessageContent}
+    />
+    {entrevista.open && entrevista.vacante && <EntrevistaModal vacante={entrevista.vacante} onClose={handleCerrarEntrevista} onEvaluacionLista={handleEvaluacionEntrevista} />}
+    {entrevistaReal.open && entrevistaReal.vacante && <EntrevistaRealModal vacante={entrevistaReal.vacante} onClose={handleCerrarEntrevistaReal} onEvaluacionLista={handleEvaluacionEntrevistaReal} />}
+  </>;
 }
+
 const styles = {
-  bubbleBtn: {
-    position: "fixed",
-    bottom: 28,
-    right: 28,
-    width: 62,
-    height: 62,
-    borderRadius: 20,
-    background: COLORS.gradient,
-    color: "#fff",
-    border: "1px solid rgba(255,255,255,0.32)",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 18px 40px rgba(37, 99, 235, 0.42)",
-    zIndex: 999999,
-    animation: "chat-float 7s ease-in-out infinite"
-  },
-  badge: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: 600,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 999,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0 4px",
-    border: "2px solid #fff",
-    boxShadow: "0 8px 18px rgba(239,68,68,0.35)"
-  },
-  window: {
-    position: "fixed",
-    bottom: 102,
-    right: 28,
-    width: 400,
-    maxWidth: "calc(100vw - 32px)",
-    height: 560,
-    maxHeight: "calc(100vh - 126px)",
-    background: COLORS.surface,
-    borderRadius: 28,
-    boxShadow: "0 28px 80px rgba(15,23,42,0.28)",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    border: "1px solid rgba(219,231,255,0.95)",
-    zIndex: 999999,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    animation: "chat-window-in 0.42s cubic-bezier(.22,1,.36,1)"
-  },
-  header: {
-    background: COLORS.gradient,
-    color: "#fff",
-    padding: "16px 18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexShrink: 0,
-    position: "relative",
-    overflow: "hidden"
-  },
-  headerIdentity: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    position: "relative",
-    zIndex: 1
-  },
-  assistantAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    background: "rgba(255,255,255,0.18)",
-    border: "1px solid rgba(255,255,255,0.32)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.24)"
-  },
-  headerTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: 7,
-    fontWeight: 850,
-    fontSize: 16,
-    letterSpacing: "-0.2px"
-  },
-  headerSubtitle: {
-    marginTop: 2,
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 12,
-    fontWeight: 600
-  },
-  statusDot: {
-    width: 9,
-    height: 9,
-    borderRadius: "50%",
-    background: "#22c55e",
-    boxShadow: "0 0 0 4px rgba(34,197,94,0.18)"
-  },
-  closeBtn: {
-    background: "rgba(255,255,255,0.14)",
-    border: "1px solid rgba(255,255,255,0.24)",
-    color: "#fff",
-    cursor: "pointer",
-    opacity: 0.95,
-    padding: 7,
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    position: "relative",
-    zIndex: 1
-  },
-  heroHint: {
-    padding: "14px 18px 12px",
-    background: "linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%)",
-    borderBottom: `1px solid ${COLORS.border}`,
-    display: "flex",
-    flexDirection: "column",
-    gap: 3,
-    flexShrink: 0
-  },
-  heroEyebrow: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: 850,
-    textTransform: "uppercase",
-    letterSpacing: "0.7px"
-  },
-  heroTitle: {
-    color: COLORS.ink,
-    fontSize: 15,
-    letterSpacing: "-0.2px"
-  },
-  heroText: {
-    color: COLORS.muted,
-    fontSize: 12.5,
-    lineHeight: 1.35
-  },
-  messagesBox: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "18px 18px 16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    background: "radial-gradient(circle at top left, rgba(37,99,235,0.10), transparent 34%), linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%)"
-  },
-  msg: {
-    maxWidth: "80%",
-    padding: "11px 14px",
-    borderRadius: 18,
-    fontSize: 14,
-    lineHeight: 1.48,
-    wordWrap: "break-word",
-    whiteSpace: "pre-line",
-    animation: "chat-message-in 0.34s cubic-bezier(.22,1,.36,1)"
-  },
-  msgBot: {
-    alignSelf: "flex-start",
-    background: "#fff",
-    border: `1px solid ${COLORS.border}`,
-    borderBottomLeftRadius: 7,
-    color: COLORS.ink,
-    boxShadow: "0 10px 26px rgba(15,23,42,0.06)"
-  },
-  msgRecommendations: {
-    maxWidth: "96%",
-    width: "96%"
-  },
   recommendationsList: {
     display: "grid",
     gap: 10,
@@ -961,7 +599,7 @@ const styles = {
     boxShadow: "0 14px 32px rgba(37, 99, 235, 0.12)",
     position: "relative",
     overflow: "hidden",
-    animation: "chat-card-in 0.42s cubic-bezier(.22,1,.36,1) both"
+    animation: "chatbotMessageIn 0.28s ease both"
   },
   recommendationTop: {
     display: "flex",
@@ -1085,161 +723,4 @@ const styles = {
     padding: "4px 10px",
     whiteSpace: "nowrap"
   },
-  msgUser: {
-    alignSelf: "flex-end",
-    background: COLORS.gradient,
-    color: "#fff",
-    borderBottomRightRadius: 7,
-    boxShadow: "0 12px 28px rgba(37,99,235,0.22)"
-  },
-  historyError: {
-    alignSelf: "stretch",
-    color: "#991b1b",
-    background: "#fef2f2",
-    border: "1px solid #fecaca",
-    borderRadius: 12,
-    padding: "9px 11px",
-    fontSize: 12,
-    lineHeight: 1.4
-  },
-  typingRow: {
-    alignSelf: "flex-start",
-    display: "flex",
-    gap: 5,
-    padding: "11px 15px",
-    background: "#fff",
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: 18,
-    borderBottomLeftRadius: 7,
-    boxShadow: "0 10px 26px rgba(15,23,42,0.06)"
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: "50%",
-    background: COLORS.primary,
-    animation: "chat-typing-bounce 1.1s infinite"
-  },
-  inputRow: {
-    display: "flex",
-    alignItems: "flex-end",
-    gap: 10,
-    padding: "12px 14px 14px",
-    borderTop: `1px solid ${COLORS.border}`,
-    background: "#fff",
-    flexShrink: 0
-  },
-  quickActionsShell: {
-    position: "relative",
-    background: "#fff",
-    borderTop: `1px solid ${COLORS.border}`,
-    flexShrink: 0,
-    padding: "8px 36px 7px"
-  },
-  quickActions: {
-    display: "flex",
-    gap: 9,
-    padding: "2px 2px 7px",
-    background: "#fff",
-    overflowX: "auto",
-    overflowY: "hidden",
-    overscrollBehaviorX: "contain",
-    scrollBehavior: "smooth",
-    scrollSnapType: "x proximity",
-    WebkitOverflowScrolling: "touch",
-    cursor: "grab",
-    userSelect: "none",
-    touchAction: "pan-x",
-    position: "relative",
-    maskImage: "linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%)",
-    WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%)"
-  },
-  quickNavBtn: {
-    position: "absolute",
-    top: "44%",
-    transform: "translateY(-50%)",
-    width: 27,
-    height: 31,
-    borderRadius: 12,
-    border: `1px solid ${COLORS.border}`,
-    background: "#f8fbff",
-    color: COLORS.primaryDark,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 24,
-    lineHeight: 1,
-    fontWeight: 900,
-    cursor: "pointer",
-    boxShadow: "0 8px 18px rgba(15,23,42,0.07)",
-    transition: "transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease"
-  },
-  quickActionBtn: {
-    border: `1px solid ${COLORS.border}`,
-    background: "#f8fbff",
-    color: COLORS.ink,
-    borderRadius: 16,
-    padding: "10px 11px",
-    minWidth: 138,
-    fontSize: 12.5,
-    fontWeight: 800,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
-    transition: "transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease",
-    flex: "0 0 auto",
-    scrollSnapAlign: "start"
-  },
-  quickActionIcon: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 9,
-    background: "linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%)",
-    color: COLORS.primaryDark,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 11,
-    fontWeight: 900
-  },
-  quickActionBtnDisabled: {
-    opacity: 0.55,
-    cursor: "not-allowed"
-  },
-  input: {
-    flex: 1,
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: 18,
-    padding: "12px 14px",
-    fontSize: 14,
-    outline: "none",
-    resize: "none",
-    fontFamily: "inherit",
-    maxHeight: 110,
-    background: "#f8fbff",
-    color: COLORS.ink,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)"
-  },
-  sendBtn: {
-    background: COLORS.gradient,
-    border: "none",
-    color: "#fff",
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    boxShadow: "0 12px 26px rgba(37,99,235,0.28)"
-  },
-  sendBtnDisabled: {
-    background: "#cbd5e1",
-    boxShadow: "none",
-    cursor: "not-allowed"
-  }
 };
