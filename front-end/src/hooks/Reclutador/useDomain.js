@@ -125,9 +125,20 @@ export function useReclutadorChat() {
       });
 
       const respuesta = await res.text();
+      let respuestaJson = null;
+      try {
+        respuestaJson = JSON.parse(respuesta);
+      } catch {
+        // El chatbot responde texto plano en éxito y en errores funcionales.
+      }
 
       if (!res.ok) {
-        throw new Error(respuesta || `Error ${res.status}: ${res.statusText}`);
+        throw new Error(
+          respuestaJson?.message
+          || respuestaJson?.mensaje
+          || respuesta
+          || `Error ${res.status}: ${res.statusText}`
+        );
       }
 
       return respuesta;
