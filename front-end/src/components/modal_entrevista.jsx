@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useEntrevistaIA } from "../hooks/Postulante/useDomain.js";
+import { useFocusTrap } from "./useFocusTrap.js";
 const COLORS = {
   primary: "#2563eb",
   primaryDark: "#1e40af",
@@ -38,6 +39,13 @@ export default function EntrevistaModal({
   } = useEntrevistaIA();
   const messagesEndRef = useRef(null);
   const startedRef = useRef(false);
+  const requestLockRef = useRef(false);
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  const inputId = useId();
+  const statusId = useId();
+
+  useFocusTrap({ open: true, containerRef: dialogRef, onClose });
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
@@ -54,7 +62,7 @@ export default function EntrevistaModal({
         setStarting(false);
       }
     })();
-  }, []);
+  }, [iniciarEntrevista, vacante.id_vacante]);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth"
@@ -68,8 +76,9 @@ export default function EntrevistaModal({
   }
   async function handleSend() {
     const texto = input.trim();
-    if (!texto || loading || evaluacion) return;
+    if (!texto || loading || requestLockRef.current || evaluacion) return;
     const historial = buildHistorial();
+    requestLockRef.current = true;
     setMessages(prev => [...prev, {
       sender: "user",
       text: texto
@@ -83,11 +92,19 @@ export default function EntrevistaModal({
         text: data.mensaje
       }]);
     } catch (err) {
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        return last?.sender === "user" && last.text === texto ? prev.slice(0, -1) : prev;
+      });
+      setInput(texto);
       setErrorMsg(err instanceof Error ? err.message : "No se pudo continuar la entrevista.");
+    } finally {
+      requestLockRef.current = false;
     }
   }
   async function handleFinalizar() {
-    if (loading || evaluacion) return;
+    if (loading || requestLockRef.current || evaluacion) return;
+    requestLockRef.current = true;
     setErrorMsg("");
     try {
       const historial = buildHistorial();
@@ -100,6 +117,8 @@ export default function EntrevistaModal({
       });
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "No se pudo evaluar la entrevista. Intenta de nuevo.");
+    } finally {
+      requestLockRef.current = false;
     }
   }
   function handleKeyDown(e) {
@@ -109,32 +128,33 @@ export default function EntrevistaModal({
     }
   }
   const respuestasUsuario = messages.filter(m => m.sender === "user").length;
-  const puedeFinalizar = respuestasUsuario >= 2 && !evaluacion;
+  const isBusy = loading || requestLockRef.current;
+  const puedeFinalizar = respuestasUsuario >= 2 && !evaluacion && !isBusy;
   return <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div ref={dialogRef} style={styles.modal} className="entrevista-modal-motion" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <div style={styles.header}>
           <div>
-            <div style={styles.headerTitle}>Entrevista simulada</div>
+            <div id={titleId} style={styles.headerTitle}>Entrevista simulada</div>
             <div style={styles.headerSubtitle}>
               {vacante.titulo_puesto} · {vacante.empresa}
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={styles.closeBtn}>
+          <button type="button" onClick={onClose} aria-label="Cerrar entrevista simulada" style={styles.closeBtn}>
             <CloseIcon />
           </button>
         </div>
 
-        <div style={styles.messagesBox}>
-          {starting && <div style={styles.systemNote}>Preparando tu entrevista simulada...</div>}
+        <div style={styles.messagesBox} role="log" aria-live="polite" aria-relevant="additions text">
+          {starting && <div style={styles.systemNote} role="status">Preparando tu entrevista simulada...</div>}
 
-          {messages.map((m, i) => <div key={i} style={{
+          {messages.map((m, i) => <div key={i} className="entrevista-modal-message" style={{
           ...styles.msg,
           ...(m.sender === "user" ? styles.msgUser : styles.msgBot)
         }}>
               {m.text}
             </div>)}
 
-          {loading && !starting && <div style={styles.typingRow}>
+          {loading && !starting && <div className="entrevista-modal-typing" style={styles.typingRow} role="status" aria-label="La inteligencia artificial está preparando la siguiente pregunta">
               <span style={{
             ...styles.dot,
             animationDelay: "0s"
@@ -171,15 +191,20 @@ export default function EntrevistaModal({
               <p style={styles.evalDisclaimer}>Evaluacion generada con IA; puede equivocarse.</p>
             </div>}
 
-          {errorMsg && <div style={styles.errorNote}>{errorMsg}</div>}
+          {errorMsg && <div style={styles.errorNote} role="alert" aria-live="assertive">{errorMsg}</div>}
           <div ref={messagesEndRef} />
         </div>
 
+        <div id={statusId} style={styles.srOnly} role="status" aria-live="polite">
+          {starting ? "Preparando tu entrevista simulada." : loading ? "Esperando respuesta de la inteligencia artificial." : ""}
+        </div>
+
         {!evaluacion && <div style={styles.inputRow}>
-            <textarea rows={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Escribe tu respuesta..." style={styles.input} disabled={starting || loading} />
-            <button onClick={handleSend} disabled={!input.trim() || starting || loading} aria-label="Enviar respuesta" style={{
+            <label htmlFor={inputId} style={styles.srOnly}>Tu respuesta</label>
+            <textarea id={inputId} rows={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Escribe tu respuesta..." aria-describedby={statusId} style={styles.input} disabled={starting || isBusy} />
+            <button type="button" onClick={handleSend} disabled={!input.trim() || starting || isBusy} aria-label="Enviar respuesta" style={{
           ...styles.sendBtn,
-          ...(!input.trim() || starting || loading ? styles.sendBtnDisabled : {})
+          ...(!input.trim() || starting || isBusy ? styles.sendBtnDisabled : {})
         }}>
               <SendIcon />
             </button>
@@ -187,16 +212,16 @@ export default function EntrevistaModal({
 
         <div style={styles.footer}>
           {!evaluacion ? <>
-              <button onClick={onClose} style={styles.cancelBtn}>
+              <button type="button" onClick={onClose} style={styles.cancelBtn}>
                 Cancelar entrevista
               </button>
-              <button onClick={handleFinalizar} disabled={!puedeFinalizar || loading} style={{
+              <button type="button" onClick={handleFinalizar} disabled={!puedeFinalizar} style={{
             ...styles.finishBtn,
             ...(!puedeFinalizar || loading ? styles.finishBtnDisabled : {})
           }}>
                 Finalizar y evaluar
               </button>
-            </> : <button onClick={onClose} style={styles.finishBtn}>
+            </> : <button type="button" onClick={onClose} style={styles.finishBtn}>
               Cerrar
             </button>}
         </div>
@@ -211,9 +236,14 @@ export default function EntrevistaModal({
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes entrevista-typing-bounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-          30% { transform: translateY(-4px); opacity: 1; }
+        @keyframes entrevista-typing-pulse {
+          0%, 60%, 100% { opacity: 0.45; }
+          30% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .entrevista-modal-motion,
+          .entrevista-modal-message,
+          .entrevista-modal-typing { animation: none !important; }
         }
       `}</style>
     </div>;
@@ -270,9 +300,12 @@ const styles = {
     color: "#fff",
     cursor: "pointer",
     padding: 6,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     display: "flex",
-    alignItems: "center"
+    alignItems: "center",
+    justifyContent: "center"
   },
   messagesBox: {
     flex: 1,
@@ -328,7 +361,7 @@ const styles = {
     height: 6,
     borderRadius: "50%",
     background: COLORS.primary,
-    animation: "entrevista-typing-bounce 1.1s infinite"
+    animation: "entrevista-typing-pulse 1.1s infinite"
   },
   errorNote: {
     alignSelf: "center",
@@ -458,5 +491,16 @@ const styles = {
   finishBtnDisabled: {
     opacity: 0.5,
     cursor: "not-allowed"
+  },
+  srOnly: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: "hidden",
+    clip: "rect(0, 0, 0, 0)",
+    whiteSpace: "nowrap",
+    border: 0
   }
 };

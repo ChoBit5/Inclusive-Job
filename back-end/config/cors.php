@@ -6,7 +6,7 @@
 |--------------------------------------------------------------------------
 
 */
-const INCLUSIJOB_FRONTEND_ORIGIN = 'https://inclusive-job-pi.vercel.app';
+const INCLUSIJOB_FRONTEND_ORIGIN = 'http://localhost:5173';
 const INCLUSIJOB_FRONTEND_URL = INCLUSIJOB_FRONTEND_ORIGIN . '/';
 
 /*
@@ -20,17 +20,17 @@ define('INCLUSIJOB_BACKEND_BASE_PATH', getenv('INCLUSIJOB_BACKEND_BASE_PATH') ?:
 
 /* Valores host; los fallbacks de entorno permiten sobreescribirlos. */
 define('INCLUSIJOB_DB_HOST', getenv('INCLUSIJOB_DB_HOST') ?: 'localhost');
-define('INCLUSIJOB_DB_USER', getenv('INCLUSIJOB_DB_USER') ?: 'u319109241_inclusive');
-define('INCLUSIJOB_DB_PASSWORD', getenv('INCLUSIJOB_DB_PASSWORD') ?: 'Leesin1346?');
-define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'u319109241_Inclusivejob');
+define('INCLUSIJOB_DB_USER', getenv('INCLUSIJOB_DB_USER') ?: 'root');
+define('INCLUSIJOB_DB_PASSWORD', getenv('INCLUSIJOB_DB_PASSWORD') ?: '');
+define('INCLUSIJOB_DB_NAME', getenv('INCLUSIJOB_DB_NAME') ?: 'inclusijob');
 
 /*
 |--------------------------------------------------------------------------
 | Sesion / cookies
 |--------------------------------------------------------------------------
 */
-define('INCLUSIJOB_SESSION_SECURE', filter_var(getenv('INCLUSIJOB_SESSION_SECURE') ?: 'true', FILTER_VALIDATE_BOOLEAN));
-define('INCLUSIJOB_SESSION_SAMESITE', getenv('INCLUSIJOB_SESSION_SAMESITE') ?: 'None');
+define('INCLUSIJOB_SESSION_SECURE', filter_var(getenv('INCLUSIJOB_SESSION_SECURE') ?: 'false', FILTER_VALIDATE_BOOLEAN));
+define('INCLUSIJOB_SESSION_SAMESITE', getenv('INCLUSIJOB_SESSION_SAMESITE') ?: 'Lax');
 
 function inclusijob_frontend_url(string $path = ''): string
 {
