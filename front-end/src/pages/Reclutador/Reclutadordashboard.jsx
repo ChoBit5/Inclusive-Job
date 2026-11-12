@@ -10,6 +10,7 @@ import { errorAlert, successAlert } from '../../components/Admin/alerts';
 import { resolveAssetUrl } from '../../hooks/Sesion/apiSesion.js';
 import { useDiscapacidadesReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useReclutadorDashboard } from '../../hooks/Reclutador/useDomain.js';
 import { buildDashboardStats, estadoAvisoEmpresa, normalizarChartDashboard } from '../../hooks/Reclutador/dashboardHelpers.js';
+import { puedeAplicarSugerenciaIA } from '../../hooks/Reclutador/vacantesHelpers.js';
 import { INITIAL_VACANTE_FORM, VacanteFormModal, validateVacanteForm } from './components/VacanteFormModal';
 const ESTADO_COLOR = {
   activa: {
@@ -239,6 +240,11 @@ export default function ReclutadorDashboard() {
   const [formData, setFormData] = useState(INITIAL_VACANTE_FORM);
   const [iaLoading, setIaLoading] = useState({});
   const [iaSugerencias, setIaSugerencias] = useState({});
+  const formDataRef = useRef(formData);
+  const iaGenerationRef = useRef(0);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
   const dashboard = data?.data ?? data ?? {};
   const currentUser = dashboard?.user ?? {};
   const currentEmpresa = dashboard?.empresa ?? {};
@@ -255,11 +261,15 @@ export default function ReclutadorDashboard() {
   const vacantesRecientes = dashboard?.vacantes_recientes ?? [];
   const candidatosRecientes = dashboard?.candidatos_recientes ?? [];
   const closeModal = () => {
+    iaGenerationRef.current += 1;
+    setIaLoading({});
     setShowModal(false);
     setFormData(INITIAL_VACANTE_FORM);
     setIaSugerencias({});
   };
   const openModal = () => {
+    iaGenerationRef.current += 1;
+    setIaLoading({});
     setFormData(INITIAL_VACANTE_FORM);
     setIaSugerencias({});
     setShowModal(true);
@@ -290,6 +300,16 @@ export default function ReclutadorDashboard() {
     }
   };
   const handleMejorarIA = async campo => {
+    if (iaLoading[campo]) return;
+    const generacionSolicitud = iaGenerationRef.current;
+    const textoSolicitud = String(formData[campo] ?? '');
+    const solicitudPerteneceAlFormulario = () => iaGenerationRef.current === generacionSolicitud;
+    const respuestaSigueVigente = () => puedeAplicarSugerenciaIA({
+      generacionActual: iaGenerationRef.current,
+      generacionSolicitud,
+      textoActual: String(formDataRef.current[campo] ?? ''),
+      textoSolicitud,
+    });
     setIaLoading(prev => ({
       ...prev,
       [campo]: true
@@ -301,7 +321,7 @@ export default function ReclutadorDashboard() {
     try {
       const data = await mejorarTexto({
         campo,
-        texto: formData[campo] || '',
+        texto: textoSolicitud,
         contexto: {
           titulo_puesto: formData.titulo_puesto,
           descripcion_puesto: formData.descripcion_puesto,
@@ -309,17 +329,23 @@ export default function ReclutadorDashboard() {
           modalidad: formData.modalidad
         }
       });
-      setIaSugerencias(prev => ({
-        ...prev,
-        [campo]: data
-      }));
+      if (respuestaSigueVigente()) {
+        setIaSugerencias(prev => ({
+          ...prev,
+          [campo]: data
+        }));
+      }
     } catch (err) {
-      await errorAlert('No se pudo mejorar el texto', err.message || 'Intenta de nuevo en unos segundos.', t);
+      if (respuestaSigueVigente()) {
+        await errorAlert('No se pudo mejorar el texto', err.message || 'Intenta de nuevo en unos segundos.', t);
+      }
     } finally {
-      setIaLoading(prev => ({
-        ...prev,
-        [campo]: false
-      }));
+      if (solicitudPerteneceAlFormulario()) {
+        setIaLoading(prev => ({
+          ...prev,
+          [campo]: false
+        }));
+      }
     }
   };
   const handleAplicarIA = (campo, texto) => {

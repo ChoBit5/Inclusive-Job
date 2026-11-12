@@ -23,6 +23,7 @@ function mapHistorialAMensajes(rows = []) {
   if (!rows.length) return [MENSAJE_BIENVENIDA];
   const mapeados = [];
   rows.forEach(row => {
+    if (["entrevista_completada", "entrevista_simulada", "simular_entrevista"].includes(row.resultado)) return;
     if (row.mensaje_usuario) {
       mapeados.push({
         tipo: "usuario",
@@ -31,7 +32,7 @@ function mapHistorialAMensajes(rows = []) {
     }
     if (row.respuesta_ia) {
       const payload = parseRespuestaIA(row.respuesta_ia);
-      if (payload?.evaluacion && payload?.candidato) {
+      if (row.resultado === "entrevista_real_completada" && payload?.evaluacion && payload?.candidato) {
         mapeados.push({
           tipo: "bot",
           texto: payload.text || `${payload.candidato.nombre_completo} completo una entrevista simulada.`,

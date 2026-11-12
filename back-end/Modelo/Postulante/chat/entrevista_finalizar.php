@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../../config/auth.php';
-require_once __DIR__ . '/../../../config/keys.php';
 require_once __DIR__ . '/../../../Conexion.php';
 require_once __DIR__ . '/entrevista_context.php';
 require_once __DIR__ . '/entrevista_evaluacion.php';
@@ -43,7 +42,6 @@ $con = null;
 try {
     $con = conectarbd();
     mysqli_set_charset($con, 'utf8mb4');
-
     $vacante = obtener_vacante_para_entrevista($con, $idUsuario, $idVacante);
     if (!$vacante) {
         mysqli_close($con);
@@ -55,7 +53,6 @@ try {
         $historial,
         static fn(array $item): bool => $item['role'] === 'user'
     ));
-
     if (count($respuestasUsuario) < 2) {
         mysqli_close($con);
         entrevistaFinalizarError(422, 'La entrevista es muy corta para evaluarla. Responde al menos un par de preguntas.');
@@ -146,67 +143,6 @@ try {
         );
     } catch (Throwable $e) {
         error_log('[POSTULANTE_ENTREVISTA_FINALIZAR_SAVE] ' . $e->getMessage());
-    }
-
-    try {
-        $stmtRec = mysqli_prepare($con, '
-            SELECT r.id_usuario AS id_usuario_reclutador
-            FROM vacantes v
-            INNER JOIN reclutadores r ON r.id_reclutador = v.id_reclutador
-            WHERE v.id_vacante = ?
-            LIMIT 1
-        ');
-        if ($stmtRec === false) {
-            throw new RuntimeException('No se pudo preparar la consulta del reclutador.');
-        }
-
-        mysqli_stmt_bind_param($stmtRec, 'i', $idVacante);
-        mysqli_stmt_execute($stmtRec);
-        $rowRec = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtRec));
-        mysqli_stmt_close($stmtRec);
-
-        if ($rowRec && !empty($rowRec['id_usuario_reclutador'])) {
-            $idUsuarioReclutador = (int)$rowRec['id_usuario_reclutador'];
-            $stmtCand = mysqli_prepare($con, '
-                SELECT CONCAT(nombres, \' \', apellidos) AS nombre_completo
-                FROM usuarios
-                WHERE id_usuario = ?
-                LIMIT 1
-            ');
-            if ($stmtCand === false) {
-                throw new RuntimeException('No se pudo preparar la consulta del candidato.');
-            }
-
-            mysqli_stmt_bind_param($stmtCand, 'i', $idUsuario);
-            mysqli_stmt_execute($stmtCand);
-            $rowCand = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtCand));
-            mysqli_stmt_close($stmtCand);
-
-            $nombreCandidato = entrevistaFinalizarTexto($rowCand['nombre_completo'] ?? 'Un candidato');
-            $textoParaReclutador = $nombreCandidato . ' completo la entrevista simulada para "'
-                . entrevistaFinalizarTexto($vacante['titulo_puesto']) . '" con una calificacion de '
-                . $evaluacion['puntuacion'] . '/10.';
-
-            save_chat_interaction(
-                $con,
-                $idUsuarioReclutador,
-                'entrevista_completada',
-                'Entrevista simulada completada por un postulante',
-                json_encode([
-                    'text' => $textoParaReclutador,
-                    'candidato' => ['nombre_completo' => $nombreCandidato],
-                    'vacante' => [
-                        'id_vacante' => $vacante['id_vacante'],
-                        'titulo_puesto' => $vacante['titulo_puesto'],
-                    ],
-                    'evaluacion' => $evaluacion,
-                ], JSON_UNESCAPED_UNICODE),
-                'entrevista_completada',
-                $evaluacion['puntuacion']
-            );
-        }
-    } catch (Throwable $e) {
-        error_log('[POSTULANTE_ENTREVISTA_FINALIZAR_NOTIFICAR_RECLUTADOR] ' . $e->getMessage());
     }
 
     mysqli_close($con);

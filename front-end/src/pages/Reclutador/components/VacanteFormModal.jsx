@@ -133,6 +133,12 @@ function VacanteModalStyles() {
       .ia-btn:hover .ia-btn-shimmer::after {
         animation: iaShimmer 0.9s ease;
       }
+      @media (prefers-reduced-motion: reduce) {
+        .ia-suggestion-panel,
+        .ia-btn-shimmer::after {
+          animation: none !important;
+        }
+      }
     `}</style>;
 }
 function CampoConIA({
@@ -151,12 +157,12 @@ function CampoConIA({
 }) {
   const iaEnabled = Boolean(onMejorar && onAplicar);
   const textoBoton = mejorarLabel || 'Mejorar con IA';
-  return <div>
+  return <div aria-busy={Boolean(loading)}>
       
       <div className="flex items-center justify-between gap-3 mb-1.5">
         <label htmlFor={campo} className="text-xs font-bold uppercase text-slate-400">{label}</label>
 
-        {iaEnabled && <button type="button" onClick={onMejorar} disabled={loading} className="ia-btn group relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-600/15 via-fuchsia-600/10 to-purple-600/15 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-all duration-300 hover:border-purple-400/60 hover:text-purple-100 hover:shadow-[0_0_18px_-3px_rgba(192,132,252,0.55)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none shrink-0">
+        {iaEnabled && <button type="button" onClick={onMejorar} disabled={loading} className="ia-btn group relative inline-flex min-h-11 items-center gap-1.5 overflow-hidden rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-600/15 via-fuchsia-600/10 to-purple-600/15 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-all duration-300 hover:border-purple-400/60 hover:text-purple-100 hover:shadow-[0_0_18px_-3px_rgba(192,132,252,0.55)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none shrink-0">
             <span className="ia-btn-shimmer pointer-events-none absolute inset-0 overflow-hidden" />
             {loading ? <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -170,7 +176,7 @@ function CampoConIA({
 
       {tipo === 'textarea' ? <TextareaPlain id={campo} value={value} onChange={onChange} rows={rows} /> : <InputPlain id={campo} value={value} onChange={onChange} required={required} />}
 
-      {iaEnabled && sugerencia && <div className="ia-suggestion-panel relative mt-2.5 rounded-xl border border-purple-800/40 bg-gradient-to-b from-purple-950/25 via-[#0f1320] to-[#0b0f19] p-3.5 space-y-2.5 shadow-[0_4px_24px_-8px_rgba(147,51,234,0.35)]">
+      {iaEnabled && sugerencia && <div role="status" aria-live="polite" className="ia-suggestion-panel relative mt-2.5 rounded-xl border border-purple-800/40 bg-gradient-to-b from-purple-950/25 via-[#0f1320] to-[#0b0f19] p-3.5 space-y-2.5 shadow-[0_4px_24px_-8px_rgba(147,51,234,0.35)]">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-purple-400">
             <Sparkles className="h-3 w-3" />
             Sugerencias de la IA — {textoBoton.replace(/^Mejorar /i, '')}
@@ -183,14 +189,14 @@ function CampoConIA({
               Recomendado
             </span>
             <p className="text-sm text-slate-100 whitespace-pre-wrap leading-relaxed">{sugerencia.texto_mejorado}</p>
-            <button type="button" onClick={() => onAplicar(sugerencia.texto_mejorado)} className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-purple-500 hover:shadow-[0_0_12px_-2px_rgba(168,85,247,0.6)]">
+            <button type="button" onClick={() => onAplicar(sugerencia.texto_mejorado)} className="mt-2.5 inline-flex min-h-11 items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-purple-500 hover:shadow-[0_0_12px_-2px_rgba(168,85,247,0.6)]">
               Usar esta version <ArrowRight className="h-3 w-3" />
             </button>
           </div>
 
           {sugerencia.sugerencias?.map((alt, i) => <div key={`${campo}-${i}`} className="rounded-lg border border-slate-800 bg-[#0b0f19]/60 p-3 transition hover:border-slate-700">
               <p className="text-sm text-slate-400 whitespace-pre-wrap leading-relaxed">{alt}</p>
-              <button type="button" onClick={() => onAplicar(alt)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-slate-200">
+              <button type="button" onClick={() => onAplicar(alt)} className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-slate-200">
                 Usar esta version <ArrowRight className="h-3 w-3" />
               </button>
             </div>)}

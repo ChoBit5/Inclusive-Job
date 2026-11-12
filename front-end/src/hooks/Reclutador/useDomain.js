@@ -250,11 +250,18 @@ export function useMejorarRedaccionReclutador() {
 
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok || data.ok === false) {
+      if (!res.ok || data.ok !== true) {
         throw new Error(data.message || `Error ${res.status}: ${res.statusText}`);
       }
 
-      // { ok: true, campo, texto_mejorado, sugerencias: [...], nota }
+      if (data.campo !== campo
+        || typeof data.texto_mejorado !== 'string'
+        || !data.texto_mejorado.trim()
+        || !Array.isArray(data.sugerencias)
+        || typeof data.nota !== 'string') {
+        throw new Error('La respuesta de la IA no tiene un formato valido.');
+      }
+
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo mejorar el texto.';

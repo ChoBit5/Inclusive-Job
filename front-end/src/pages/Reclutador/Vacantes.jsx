@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Edit, Loader2, MapPin, Plus, RefreshCw, Search, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
 import { reclutadorTheme as t } from '../../components/Portal/portalTheme';
@@ -7,7 +7,7 @@ import { confirmDelete, errorAlert, successAlert } from '../../components/Admin/
 import { useDiscapacidadesReclutador, useEmpresaReclutador, useGuardarVacanteReclutador, useMejorarRedaccionReclutador, useVacantesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import BubleChat from '../Reclutador/ChatBot.jsx';
 import { DiscapacidadBadges, INITIAL_VACANTE_FORM, VacanteFormModal, validateVacanteForm } from './components/VacanteFormModal';
-import { aplicarEstadoEnLista, armarFormularioEdicion, calcularSiguienteEstado, filtrarVacantes, mensajeErrorEliminar } from '../../hooks/Reclutador/vacantesHelpers.js';
+import { aplicarEstadoEnLista, armarFormularioEdicion, calcularSiguienteEstado, filtrarVacantes, mensajeErrorEliminar, puedeAplicarSugerenciaIA } from '../../hooks/Reclutador/vacantesHelpers.js';
 export default function VacantesReclutador() {
   const {
     data,
@@ -42,9 +42,14 @@ export default function VacantesReclutador() {
   const [formData, setFormData] = useState(INITIAL_VACANTE_FORM);
   const [iaLoading, setIaLoading] = useState({});
   const [iaSugerencias, setIaSugerencias] = useState({});
+  const formDataRef = useRef(formData);
+  const iaGenerationRef = useRef(0);
   useEffect(() => {
     if (data?.data) setVacantes(data.data);
   }, [data]);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
   const catalogoDiscapacidades = useMemo(() => {
     const payload = discapacidadesData?.data;
     if (Array.isArray(payload)) return payload;
@@ -64,12 +69,16 @@ export default function VacantesReclutador() {
       await errorAlert(empresaRechazada ? 'Empresa rechazada' : 'Empresa pendiente', empresaRechazada ? 'Tu empresa fue rechazada. Corrige y reenvia los datos corporativos para una nueva validacion.' : 'No puedes publicar vacantes hasta que tu empresa sea aprobada por el administrador.', t);
       return;
     }
+    iaGenerationRef.current += 1;
+    setIaLoading({});
     setEditingVacante(vacante);
     setFormData(vacante ? armarFormularioEdicion(vacante) : INITIAL_VACANTE_FORM);
     setIaSugerencias({});
     setIsModalOpen(true);
   };
   const handleCloseModal = () => {
+    iaGenerationRef.current += 1;
+    setIaLoading({});
     setIsModalOpen(false);
     setEditingVacante(null);
     setFormData(INITIAL_VACANTE_FORM);
@@ -123,6 +132,16 @@ export default function VacantesReclutador() {
     }
   };
   const handleMejorarIA = async campo => {
+    if (iaLoading[campo]) return;
+    const generacionSolicitud = iaGenerationRef.current;
+    const textoSolicitud = String(formData[campo] ?? '');
+    const solicitudPerteneceAlFormulario = () => iaGenerationRef.current === generacionSolicitud;
+    const respuestaSigueVigente = () => puedeAplicarSugerenciaIA({
+      generacionActual: iaGenerationRef.current,
+      generacionSolicitud,
+      textoActual: String(formDataRef.current[campo] ?? ''),
+      textoSolicitud,
+    });
     setIaLoading(prev => ({
       ...prev,
       [campo]: true
@@ -134,7 +153,7 @@ export default function VacantesReclutador() {
     try {
       const data = await mejorarTexto({
         campo,
-        texto: formData[campo] || '',
+        texto: textoSolicitud,
         contexto: {
           titulo_puesto: formData.titulo_puesto,
           descripcion_puesto: formData.descripcion_puesto,
@@ -142,17 +161,23 @@ export default function VacantesReclutador() {
           modalidad: formData.modalidad
         }
       });
-      setIaSugerencias(prev => ({
-        ...prev,
-        [campo]: data
-      }));
+      if (respuestaSigueVigente()) {
+        setIaSugerencias(prev => ({
+          ...prev,
+          [campo]: data
+        }));
+      }
     } catch (err) {
-      await errorAlert('No se pudo mejorar el texto', err.message || 'Intenta de nuevo en unos segundos.', t);
+      if (respuestaSigueVigente()) {
+        await errorAlert('No se pudo mejorar el texto', err.message || 'Intenta de nuevo en unos segundos.', t);
+      }
     } finally {
-      setIaLoading(prev => ({
-        ...prev,
-        [campo]: false
-      }));
+      if (solicitudPerteneceAlFormulario()) {
+        setIaLoading(prev => ({
+          ...prev,
+          [campo]: false
+        }));
+      }
     }
   };
   const handleAplicarIA = (campo, texto) => {

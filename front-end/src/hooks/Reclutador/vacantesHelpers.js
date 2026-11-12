@@ -114,3 +114,12 @@ export function mensajeErrorEliminar(err) {
   const mensaje = err instanceof Error ? err.message : String(err?.message ?? '');
   return mensaje.trim() ? mensaje : 'No se pudo eliminar la vacante.';
 }
+
+export function puedeAplicarSugerenciaIA({
+  generacionActual,
+  generacionSolicitud,
+  textoActual,
+  textoSolicitud,
+}) {
+  return generacionActual === generacionSolicitud && textoActual === textoSolicitud;
+}
