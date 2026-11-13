@@ -55,7 +55,6 @@ export default function Candidatos() {
       });
       setCandidatoDestacado({
         id_postulacion: Number(rec.id_postulacion),
-        porcentaje_compatibilidad: rec.porcentaje_compatibilidad
       });
     }
     navigate(location.pathname, {
@@ -282,7 +281,7 @@ export default function Candidatos() {
                     <div>
                       {esDestacado && <span style={badgeIAStyle}>
                           <Sparkles size={12} />
-                          {typeof candidatoDestacado.porcentaje_compatibilidad === "number" ? `Recomendado por IA · ${candidatoDestacado.porcentaje_compatibilidad}% compatible` : "Visto desde el chat"}
+                          Recomendado por IA
                         </span>}
                       <h4 style={{
                 color: t.textPrimary,

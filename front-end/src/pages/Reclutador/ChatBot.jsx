@@ -164,7 +164,7 @@ function TarjetaRecomendacion({
         whiteSpace: "nowrap",
         flexShrink: 0
       }}>
-          {recomendacion.porcentaje_compatibilidad}% compatible
+          Recomendado por IA
         </span>
       </div>
       <span style={{
@@ -461,7 +461,7 @@ export default function ChatBot() {
     if (!contenido || cargandoRespuesta) return;
     if (PATRON_MEJOR_CANDIDATO.test(contenido)) {
       setMensaje("");
-      await iniciarBusquedaMejorCandidato(contenido);
+      await iniciarBusquedaMejorCandidato(contenido, { restaurarEntradaAnteError: true });
       return;
     }
     setMensajes(prev => [...prev, {
@@ -481,9 +481,10 @@ export default function ChatBot() {
         texto: err?.message || "Ocurrió un error al contactar al asistente.",
         error: true
       }]);
+      setMensaje(contenido);
     }
   };
-  const iniciarBusquedaMejorCandidato = async textoUsuario => {
+  const iniciarBusquedaMejorCandidato = async (textoUsuario, opciones = {}) => {
     if (cargandoRespuesta) return;
     if (loadingVacantes) {
       setMensajes(prev => [...prev, {
@@ -506,7 +507,7 @@ export default function ChatBot() {
       return;
     }
     if (vacantesActivas.length === 1) {
-      await ejecutarBusquedaMejorCandidato(textoUsuario, vacantesActivas[0].id_vacante);
+      await ejecutarBusquedaMejorCandidato(textoUsuario, vacantesActivas[0].id_vacante, opciones);
       return;
     }
     setMensajes(prev => [...prev, {
@@ -520,7 +521,8 @@ export default function ChatBot() {
   };
   const ejecutarBusquedaMejorCandidato = async (textoUsuario, idVacante, {
     mostrarBurbujaUsuario = true,
-    excluirPostulaciones = []
+    excluirPostulaciones = [],
+    restaurarEntradaAnteError = false
   } = {}) => {
     if (mostrarBurbujaUsuario) {
       setMensajes(prev => [...prev, {
@@ -548,6 +550,7 @@ export default function ChatBot() {
         texto: err?.message || "Ocurrió un error al buscar el mejor candidato.",
         error: true
       }]);
+      if (restaurarEntradaAnteError && textoUsuario) setMensaje(textoUsuario);
     }
   };
   const elegirVacanteParaAnalizar = async idVacante => {
@@ -564,7 +567,6 @@ export default function ChatBot() {
           id_vacante: recomendacion.id_vacante,
           id_postulacion: recomendacion.id_postulacion,
           nombre_completo: recomendacion.nombre_completo,
-          porcentaje_compatibilidad: recomendacion.porcentaje_compatibilidad,
           focusEntrevista: Boolean(recomendacion.focusEntrevista)
         }
       }

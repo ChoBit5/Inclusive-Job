@@ -78,6 +78,12 @@ if (!function_exists('reclutador_id_desde_usuario')) {
 if (!function_exists('reclutador_json_body')) {
     function reclutador_json_body() {
         $input = json_decode(file_get_contents('php://input'), true);
+        $GLOBALS['reclutador_json_body_invalido'] = json_last_error() !== JSON_ERROR_NONE
+            || $input === null
+            || is_string($input)
+            || is_int($input)
+            || is_float($input)
+            || is_bool($input);
         return is_array($input) ? $input : [];
     }
 }
