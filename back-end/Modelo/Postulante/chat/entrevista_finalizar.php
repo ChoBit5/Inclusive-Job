@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../config/auth.php';
 require_once __DIR__ . '/../../../Conexion.php';
+require_once __DIR__ . '/../../../config/keys.php';
 require_once __DIR__ . '/entrevista_context.php';
 require_once __DIR__ . '/entrevista_evaluacion.php';
 require_once __DIR__ . '/entrevista_groq.php';

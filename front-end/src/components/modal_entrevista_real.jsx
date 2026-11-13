@@ -20,6 +20,13 @@ function SendIcon() {
       <path d="m22 2-7 20-4-9-9-4Z" />
     </svg>;
 }
+function formatTiempoRestante(segundos) {
+  if (segundos == null) return "15:00";
+  const total = Math.max(0, Number(segundos));
+  const minutos = Math.floor(total / 60).toString().padStart(2, "0");
+  const segundosRestantes = Math.floor(total % 60).toString().padStart(2, "0");
+  return `${minutos}:${segundosRestantes}`;
+}
 export default function EntrevistaRealModal({
   vacante,
   onClose,
@@ -35,8 +42,13 @@ export default function EntrevistaRealModal({
   const [evaluacion, setEvaluacion] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [initError, setInitError] = useState(false);
+  const [expiraEn, setExpiraEn] = useState(null);
+  const [tiempoRestante, setTiempoRestante] = useState(null);
+  const [finalizandoPorTiempo, setFinalizandoPorTiempo] = useState(false);
   const messagesEndRef = useRef(null);
   const startedRef = useRef(false);
+  const finalizarRef = useRef(null);
+  const autoFinalizandoRef = useRef(false);
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
@@ -50,6 +62,8 @@ export default function EntrevistaRealModal({
           sender: "bot",
           text: data.mensaje
         }]);
+        setExpiraEn(Number(data.expira_en));
+        setTiempoRestante(Number(data.tiempo_restante_segundos));
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "No se pudo iniciar la entrevista.");
         setInitError(true);
@@ -63,6 +77,20 @@ export default function EntrevistaRealModal({
       behavior: "smooth"
     });
   }, [messages, loading]);
+  useEffect(() => {
+    if (!expiraEn || evaluacion || initError) return undefined;
+    const actualizarTiempo = () => {
+      const restante = Math.max(0, Math.ceil(expiraEn - Date.now() / 1000));
+      setTiempoRestante(restante);
+      if (restante === 0 && !loading && !autoFinalizandoRef.current) {
+        autoFinalizandoRef.current = true;
+        finalizarRef.current?.("tiempo_agotado");
+      }
+    };
+    actualizarTiempo();
+    const timer = setInterval(actualizarTiempo, 1000);
+    return () => clearInterval(timer);
+  }, [expiraEn, evaluacion, initError, loading]);
   function buildHistorial() {
     return messages.map(m => ({
       role: m.sender === "user" ? "user" : "assistant",
@@ -71,7 +99,7 @@ export default function EntrevistaRealModal({
   }
   async function handleSend() {
     const texto = input.trim();
-    if (!texto || loading || evaluacion || initError) return;
+    if (!texto || loading || evaluacion || initError || tiempoRestante === 0 || finalizandoPorTiempo) return;
     const historial = buildHistorial();
     setMessages(prev => [...prev, {
       sender: "user",
@@ -97,8 +125,9 @@ export default function EntrevistaRealModal({
       setLoading(false);
     }
   }
-  async function handleFinalizar() {
+  async function handleFinalizar(motivoFinalizacion = "manual") {
     if (loading || evaluacion || initError) return;
+    if (motivoFinalizacion === "tiempo_agotado") setFinalizandoPorTiempo(true);
     setErrorMsg("");
     setLoading(true);
     try {
@@ -106,7 +135,8 @@ export default function EntrevistaRealModal({
       const data = await ejecutarEntrevista({
         accion: "finalizar",
         id_vacante: vacante.id_vacante,
-        historial
+        historial,
+        motivo_finalizacion: motivoFinalizacion
       });
       setEvaluacion(data.evaluacion);
       onEvaluacionLista?.({
@@ -121,6 +151,7 @@ export default function EntrevistaRealModal({
       setLoading(false);
     }
   }
+  finalizarRef.current = handleFinalizar;
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -128,7 +159,7 @@ export default function EntrevistaRealModal({
     }
   }
   const respuestasUsuario = messages.filter(m => m.sender === "user").length;
-  const puedeFinalizar = respuestasUsuario >= 2 && !evaluacion && !initError;
+  const puedeFinalizar = respuestasUsuario >= 2 && !evaluacion && !initError && tiempoRestante !== 0 && !finalizandoPorTiempo;
   return <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.header}>
@@ -142,6 +173,14 @@ export default function EntrevistaRealModal({
           <button onClick={onClose} aria-label="Cerrar" style={styles.closeBtn}>
             <CloseIcon />
           </button>
+        </div>
+
+        <div role="status" aria-live="polite" style={styles.timerBar}>
+          <div>
+            <strong style={styles.timerLabel}>Tiempo restante</strong>
+            <span style={styles.timerHint}>Límite total: 15 minutos</span>
+          </div>
+          <strong style={styles.timerValue}>{formatTiempoRestante(tiempoRestante)}</strong>
         </div>
 
         <div style={styles.messagesBox}>
@@ -171,6 +210,10 @@ export default function EntrevistaRealModal({
 
           {evaluacion && <div style={styles.evalCard}>
               <strong style={styles.evalScore}>{evaluacion.puntuacion}/10</strong>
+              {(evaluacion.tiempo_utilizado_segundos != null || evaluacion.motivo_finalizacion) && <div style={styles.evalTiming}>
+                {evaluacion.motivo_finalizacion === "tiempo_agotado" ? "Finalizada por tiempo agotado" : "Finalizada manualmente"}
+                {evaluacion.tiempo_utilizado_segundos != null ? ` · Tiempo utilizado: ${formatTiempoRestante(evaluacion.tiempo_utilizado_segundos)}` : ""}
+              </div>}
               <p style={styles.evalText}>{evaluacion.resumen}</p>
 
               {evaluacion.fortalezas?.length > 0 && <>
@@ -192,14 +235,15 @@ export default function EntrevistaRealModal({
             </div>}
 
           {errorMsg && <div style={styles.errorNote}>{errorMsg}</div>}
+          {finalizandoPorTiempo && !evaluacion && <div role="status" style={styles.timerNotice}>Se agotó el tiempo. Estamos evaluando las respuestas que alcanzaste a enviar...</div>}
           <div ref={messagesEndRef} />
         </div>
 
         {!evaluacion && !initError && <div style={styles.inputRow}>
-            <textarea rows={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Escribe tu respuesta..." style={styles.input} disabled={starting || loading} />
-            <button onClick={handleSend} disabled={!input.trim() || starting || loading} aria-label="Enviar respuesta" style={{
+            <textarea rows={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Escribe tu respuesta..." style={styles.input} disabled={starting || loading || tiempoRestante === 0 || finalizandoPorTiempo} />
+            <button onClick={handleSend} disabled={!input.trim() || starting || loading || tiempoRestante === 0 || finalizandoPorTiempo} aria-label="Enviar respuesta" style={{
           ...styles.sendBtn,
-          ...(!input.trim() || starting || loading ? styles.sendBtnDisabled : {})
+          ...(!input.trim() || starting || loading || tiempoRestante === 0 || finalizandoPorTiempo ? styles.sendBtnDisabled : {})
         }}>
               <SendIcon />
             </button>
@@ -214,7 +258,7 @@ export default function EntrevistaRealModal({
               <button onClick={onClose} style={styles.cancelBtn}>
                 Cancelar entrevista
               </button>
-              <button onClick={handleFinalizar} disabled={!puedeFinalizar || loading} style={{
+              <button onClick={() => handleFinalizar("manual")} disabled={!puedeFinalizar || loading} style={{
             ...styles.finishBtn,
             ...(!puedeFinalizar || loading ? styles.finishBtnDisabled : {})
           }}>
@@ -233,9 +277,9 @@ export default function EntrevistaRealModal({
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes entrevista-real-typing-bounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-          30% { transform: translateY(-4px); opacity: 1; }
+         @keyframes entrevista-real-typing-pulse {
+           0%, 100% { opacity: 0.5; }
+           50% { opacity: 1; }
         }
       `}</style>
     </div>;
@@ -275,6 +319,32 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     flexShrink: 0
+  },
+  timerBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "10px 24px",
+    background: "#eff6ff",
+    borderBottom: `1px solid ${COLORS.border}`,
+    color: COLORS.primaryDark,
+    flexShrink: 0
+  },
+  timerLabel: {
+    display: "block",
+    fontSize: 13
+  },
+  timerHint: {
+    display: "block",
+    color: "#475569",
+    fontSize: 11.5,
+    marginTop: 2
+  },
+  timerValue: {
+    fontVariantNumeric: "tabular-nums",
+    fontSize: 18,
+    letterSpacing: "0.02em"
   },
   headerTitle: {
     fontWeight: 850,
@@ -350,7 +420,7 @@ const styles = {
     height: 6,
     borderRadius: "50%",
     background: COLORS.primary,
-    animation: "entrevista-real-typing-bounce 1.1s infinite"
+     animation: "entrevista-real-typing-pulse 1.1s infinite"
   },
   errorNote: {
     alignSelf: "center",
@@ -360,6 +430,16 @@ const styles = {
     borderRadius: 10,
     padding: "8px 12px",
     fontSize: 13
+  },
+  timerNotice: {
+    alignSelf: "center",
+    color: "#92400e",
+    background: "#fef3c7",
+    border: "1px solid #fcd34d",
+    borderRadius: 10,
+    padding: "8px 12px",
+    fontSize: 13,
+    textAlign: "center"
   },
   evalCard: {
     alignSelf: "stretch",
@@ -383,6 +463,11 @@ const styles = {
     fontSize: 13.5,
     color: "#374151",
     margin: "6px 0 10px"
+  },
+  evalTiming: {
+    color: "#475569",
+    fontSize: 12,
+    marginBottom: 8
   },
   evalHeading: {
     fontSize: 12,

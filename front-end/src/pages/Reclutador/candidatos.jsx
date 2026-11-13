@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Accessibility, ArrowLeft, Award, Briefcase, CheckCircle, Code, Eye, FileText, Globe, Mail, Mic, Phone, Sparkles, User, Users, XCircle } from "lucide-react";
 import PortalLayout from "../../components/Portal/Portallayout";
@@ -33,6 +33,7 @@ export default function Candidatos() {
   const [vacanteSeleccionada, setVacanteSeleccionada] = useState(null);
   const [candidatos, setCandidatos] = useState([]);
   const [candidatoSeleccionado, setCandidatoSeleccionado] = useState(null);
+  const [enfocarEntrevista, setEnfocarEntrevista] = useState(false);
   const [candidatoDestacado, setCandidatoDestacado] = useState(null);
   const [postulacionActualizando, setPostulacionActualizando] = useState(null);
   const [pdfPreview, setPdfPreview] = useState(null);
@@ -47,7 +48,11 @@ export default function Candidatos() {
     if (!rec || vacantes.length === 0) return;
     const vacante = vacantes.find(v => Number(v.id_vacante) === Number(rec.id_vacante));
     if (vacante) {
-      verDetalleCandidatos(vacante);
+      verDetalleCandidatos(vacante, {
+        idPostulacion: rec.id_postulacion,
+        nombreCandidato: rec.nombre_completo,
+        enfocarEntrevista: rec.focusEntrevista === true
+      });
       setCandidatoDestacado({
         id_postulacion: Number(rec.id_postulacion),
         porcentaje_compatibilidad: rec.porcentaje_compatibilidad
@@ -58,13 +63,26 @@ export default function Candidatos() {
       state: {}
     });
   }, [vacantes, location.state]);
-  const verDetalleCandidatos = async vacante => {
+  const verDetalleCandidatos = async (vacante, opciones = {}) => {
     setVacanteSeleccionada(vacante);
     setCandidatoSeleccionado(null);
+    setEnfocarEntrevista(false);
     try {
       const result = await obtenerCandidatosVacante(vacante.id_vacante);
       const listado = result?.data ?? result;
-      setCandidatos(Array.isArray(listado) ? listado : []);
+      const candidatosCargados = Array.isArray(listado) ? listado : [];
+      setCandidatos(candidatosCargados);
+      if (opciones.enfocarEntrevista) {
+        const idPostulacion = Number(opciones.idPostulacion);
+        const nombreCandidato = normalizarNombreCandidato(opciones.nombreCandidato);
+        const candidatoEntrevista = idPostulacion > 0
+          ? candidatosCargados.find(candidato => Number(candidato.id_postulacion) === idPostulacion)
+          : candidatosCargados.find(candidato => normalizarNombreCandidato(candidato.nombre_completo) === nombreCandidato);
+        if (candidatoEntrevista) {
+          setCandidatoSeleccionado(candidatoEntrevista);
+          setEnfocarEntrevista(true);
+        }
+      }
     } catch (error) {
       console.error("Error al obtener candidatos:", error);
       setCandidatos([]);
@@ -74,6 +92,7 @@ export default function Candidatos() {
     setVacanteSeleccionada(null);
     setCandidatos([]);
     setCandidatoSeleccionado(null);
+    setEnfocarEntrevista(false);
     setCandidatoDestacado(null);
     refetch().catch(() => {});
   };
@@ -304,7 +323,10 @@ export default function Candidatos() {
               gap: 8,
               flexWrap: "wrap"
             }}>
-                      <button onClick={() => setCandidatoSeleccionado(cand)} style={actionButtonStyle("perfil")}>
+                        <button onClick={() => {
+                        setEnfocarEntrevista(false);
+                        setCandidatoSeleccionado(cand);
+                      }} style={actionButtonStyle("perfil")}>
                         <Eye size={14} /> Ver perfil
                       </button>
                       <button onClick={() => cambiarEstadoPostulacion(cand, "aceptado")} disabled={actionState.aceptar} style={actionButtonStyle("aceptar", actionState.aceptar)}>
@@ -545,6 +567,8 @@ export default function Candidatos() {
                 {entrevistaEstado === "enviada" ? "Entrevista enviada" : entrevistaEstado === "enviando" ? "Enviando..." : "Mandar entrevista"}
               </button>}
           </div>
+
+          {entrevistaEstado === "completada" && candidatoSeleccionado.evaluacion_entrevista && <EntrevistaResumen autoFocus={enfocarEntrevista} evaluacion={candidatoSeleccionado.evaluacion_entrevista} tiempoUtilizado={candidatoSeleccionado.tiempo_utilizado_entrevista} tiempoLimite={candidatoSeleccionado.tiempo_limite_entrevista} motivoFinalizacion={candidatoSeleccionado.motivo_finalizacion_entrevista} />}
         </div>}
       <BubleChat />
       <PdfPreviewModal open={Boolean(pdfPreview)} sourceUrl={pdfPreview?.sourceUrl} title={pdfPreview?.title} onClose={() => setPdfPreview(null)} theme={t} />
@@ -615,6 +639,56 @@ function InfoLine({
       }}>{content}</p>}
       </div>
     </div>;
+}
+function formatDuracionEntrevista(segundos) {
+  if (segundos == null || Number.isNaN(Number(segundos))) return "No disponible";
+  const total = Math.max(0, Number(segundos));
+  const minutos = Math.floor(total / 60);
+  const restantes = Math.floor(total % 60);
+  if (minutos === 0) return `${restantes} s`;
+  return restantes ? `${minutos} min ${restantes} s` : `${minutos} min`;
+}
+function EntrevistaLista({
+  titulo,
+  items
+}) {
+  if (!items?.length) return null;
+  return <div style={entrevistaResumenGroupStyle}>
+      <strong style={entrevistaResumenLabelStyle}>{titulo}</strong>
+      <ul style={entrevistaResumenListStyle}>
+        {items.map((item, index) => <li key={`${titulo}-${index}`}>{item}</li>)}
+      </ul>
+    </div>;
+}
+function EntrevistaResumen({
+  autoFocus = false,
+  evaluacion,
+  tiempoUtilizado,
+  tiempoLimite,
+  motivoFinalizacion
+}) {
+  const resumenRef = useRef(null);
+  useEffect(() => {
+    if (autoFocus) resumenRef.current?.focus();
+  }, [autoFocus]);
+  return <section ref={resumenRef} id="entrevista-resumen" tabIndex={-1} aria-label="Resumen de entrevista oficial" style={entrevistaResumenStyle}>
+      <div style={entrevistaResumenHeaderStyle}>
+        <div>
+          <strong style={entrevistaResumenTitleStyle}>Resumen de la entrevista oficial</strong>
+          <span style={entrevistaResumenMetaStyle}>
+            {motivoFinalizacion === "tiempo_agotado" ? "Finalizada por tiempo agotado" : "Finalizada manualmente"}
+            {tiempoUtilizado != null ? ` · Duración: ${formatDuracionEntrevista(tiempoUtilizado)}` : ""}
+            {tiempoLimite != null ? ` · Límite: ${formatDuracionEntrevista(tiempoLimite)}` : ""}
+          </span>
+        </div>
+        <span style={entrevistaResumenScoreStyle}>{evaluacion.puntuacion}/10</span>
+      </div>
+      {evaluacion.resumen && <p style={entrevistaResumenTextStyle}>{evaluacion.resumen}</p>}
+      <EntrevistaLista titulo="Fortalezas" items={evaluacion.fortalezas} />
+      <EntrevistaLista titulo="Áreas de mejora" items={evaluacion.areas_mejora} />
+      {evaluacion.consejo_final && <div style={entrevistaConsejoStyle}><strong>Consejo final</strong><p>{evaluacion.consejo_final}</p></div>}
+      <p style={entrevistaResumenDisclaimerStyle}>Evaluación generada con IA; úsala como apoyo para revisar el proceso.</p>
+    </section>;
 }
 function TableCard({
   children
@@ -936,6 +1010,77 @@ const pillStyle = (type = "default") => {
     fontWeight: 700
   };
 };
+const entrevistaResumenStyle = {
+  background: t.bgSurface,
+  border: `1px solid ${t.accentBorder}`,
+  borderRadius: 14,
+  padding: 18,
+  display: "grid",
+  gap: 12
+};
+const entrevistaResumenHeaderStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap"
+};
+const entrevistaResumenTitleStyle = {
+  display: "block",
+  color: t.textPrimary,
+  fontSize: 15
+};
+const entrevistaResumenMetaStyle = {
+  display: "block",
+  color: t.textMuted,
+  fontSize: 12,
+  marginTop: 4
+};
+const entrevistaResumenScoreStyle = {
+  background: t.accentSoft,
+  border: `1px solid ${t.accentBorder}`,
+  borderRadius: 999,
+  color: t.accent,
+  padding: "5px 10px",
+  fontWeight: 800,
+  whiteSpace: "nowrap"
+};
+const entrevistaResumenTextStyle = {
+  color: t.textSecondary,
+  fontSize: 14,
+  lineHeight: 1.55,
+  margin: 0
+};
+const entrevistaResumenGroupStyle = {
+  display: "grid",
+  gap: 4
+};
+const entrevistaResumenLabelStyle = {
+  color: t.accent,
+  fontSize: 12,
+  textTransform: "uppercase",
+  letterSpacing: "0.03em"
+};
+const entrevistaResumenListStyle = {
+  color: t.textSecondary,
+  fontSize: 13,
+  lineHeight: 1.5,
+  margin: 0,
+  paddingLeft: 20
+};
+const entrevistaConsejoStyle = {
+  background: t.bgElevated,
+  borderRadius: 10,
+  color: t.textSecondary,
+  fontSize: 13,
+  lineHeight: 1.5,
+  padding: "10px 12px"
+};
+const entrevistaResumenDisclaimerStyle = {
+  color: t.textMuted,
+  fontSize: 11,
+  margin: 0
+};
 const entrevistaSectionStyle = {
   background: t.bgSurface,
   border: `1px solid ${t.accentBorder}`,
@@ -993,4 +1138,7 @@ function safeDate(value) {
   if (!value) return "-";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("es-MX");
+}
+function normalizarNombreCandidato(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("es-MX");
 }

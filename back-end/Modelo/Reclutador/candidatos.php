@@ -45,6 +45,18 @@ function candidatos_resultado($stmt, string $mensaje = 'No se pudieron obtener l
     return $resultado;
 }
 
+function candidatos_lista_evaluacion($valor): array
+{
+    if (!is_array($valor)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map(
+        static fn($item): string => trim((string)$item),
+        $valor
+    ), static fn(string $item): bool => $item !== ''));
+}
+
 function candidatos_vincular_lista($stmt, array $ids): void
 {
     $types = str_repeat('i', count($ids));
@@ -331,7 +343,8 @@ try {
                     COALESCE(pos.experiencia, 'Sin experiencia laboral registrada.') AS experiencia,
                     'No especificada' AS educacion,
                     (ce.id_usuario IS NOT NULL) AS entrevista_realizada,
-                    ce.puntuacion_entrevista
+                     ce.puntuacion_entrevista,
+                     ce.respuesta_entrevista
                 FROM postulaciones p
                 INNER JOIN vacantes v ON p.id_vacante = v.id_vacante
                 INNER JOIN postulantes pos ON p.id_postulante = pos.id_postulante
@@ -340,12 +353,14 @@ try {
                     SELECT
                         id_usuario,
                         id_vacante_ref,
-                        MAX(CAST(NULLIF(puntuacion_entrevista, '') AS UNSIGNED)) AS puntuacion_entrevista
+                         MAX(CAST(NULLIF(puntuacion_entrevista, '') AS UNSIGNED)) AS puntuacion_entrevista,
+                         MAX(respuesta_entrevista) AS respuesta_entrevista
                     FROM (
                         SELECT
                             id_usuario,
                             JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(respuesta_ia), respuesta_ia, '{}'), '$.vacante.id_vacante')) AS id_vacante_ref,
-                            JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(respuesta_ia), respuesta_ia, '{}'), '$.evaluacion.puntuacion')) AS puntuacion_entrevista
+                             JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(respuesta_ia), respuesta_ia, '{}'), '$.evaluacion.puntuacion')) AS puntuacion_entrevista,
+                             respuesta_ia AS respuesta_entrevista
                         FROM chabots
                         WHERE resultado = 'entrevista_real_realizada'
                     ) entrevistas
@@ -364,6 +379,20 @@ try {
         while ($row = mysqli_fetch_assoc($resultado)) {
             $idPostulante = (int)$row['id_postulante'];
             $idsPostulante[$idPostulante] = $idPostulante;
+            $entrevistaPayload = json_decode((string)($row['respuesta_entrevista'] ?? ''), true);
+            $evaluacionPayload = is_array($entrevistaPayload['evaluacion'] ?? null)
+                ? $entrevistaPayload['evaluacion']
+                : null;
+            $evaluacionEntrevista = $evaluacionPayload === null ? null : [
+                'puntuacion' => isset($evaluacionPayload['puntuacion']) ? (int)$evaluacionPayload['puntuacion'] : null,
+                'resumen' => trim((string)($evaluacionPayload['resumen'] ?? '')),
+                'fortalezas' => candidatos_lista_evaluacion($evaluacionPayload['fortalezas'] ?? []),
+                'areas_mejora' => candidatos_lista_evaluacion($evaluacionPayload['areas_mejora'] ?? []),
+                'consejo_final' => trim((string)($evaluacionPayload['consejo_final'] ?? '')),
+            ];
+            $tiempoUtilizado = $evaluacionPayload['tiempo_utilizado_segundos'] ?? $entrevistaPayload['tiempo_utilizado_segundos'] ?? null;
+            $tiempoLimite = $evaluacionPayload['tiempo_limite_segundos'] ?? $entrevistaPayload['tiempo_limite_segundos'] ?? null;
+            $motivoFinalizacion = $evaluacionPayload['motivo_finalizacion'] ?? $entrevistaPayload['motivo_finalizacion'] ?? null;
             $candidatos[] = [
                 'id_postulacion' => (int)$row['id_postulacion'],
                 'estado_postulacion' => $row['estado_postulacion'],
@@ -391,6 +420,10 @@ try {
                 'discapacidades' => [],
                 'entrevista_realizada' => (bool)(int)$row['entrevista_realizada'],
                 'puntuacion_entrevista' => $row['puntuacion_entrevista'] !== null ? (int)$row['puntuacion_entrevista'] : null,
+                'evaluacion_entrevista' => $evaluacionEntrevista,
+                'tiempo_utilizado_entrevista' => is_numeric($tiempoUtilizado) ? (int)$tiempoUtilizado : null,
+                'tiempo_limite_entrevista' => is_numeric($tiempoLimite) ? (int)$tiempoLimite : null,
+                'motivo_finalizacion_entrevista' => $motivoFinalizacion !== null ? (string)$motivoFinalizacion : null,
             ];
         }
         mysqli_stmt_close($stmt);

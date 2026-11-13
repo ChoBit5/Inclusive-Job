@@ -19,6 +19,14 @@ function parseRespuestaIA(value) {
     return null;
   }
 }
+function resumenEntrevistaChat(payload) {
+  const nombre = payload?.candidato?.nombre_completo || "El postulante";
+  const puesto = payload?.vacante?.titulo_puesto;
+  const puntuacion = payload?.evaluacion?.puntuacion;
+  const contexto = puesto ? ` para "${puesto}"` : "";
+  const resultado = puntuacion != null ? ` Resultado: ${puntuacion}/10.` : ".";
+  return `${nombre} completó la entrevista oficial${contexto}.${resultado}`;
+}
 function mapHistorialAMensajes(rows = []) {
   if (!rows.length) return [MENSAJE_BIENVENIDA];
   const mapeados = [];
@@ -35,7 +43,7 @@ function mapHistorialAMensajes(rows = []) {
       if (row.resultado === "entrevista_real_completada" && payload?.evaluacion && payload?.candidato) {
         mapeados.push({
           tipo: "bot",
-          texto: payload.text || `${payload.candidato.nombre_completo} completo una entrevista simulada.`,
+          texto: resumenEntrevistaChat(payload),
           entrevistaCompletada: {
             nombreCompleto: payload.candidato.nombre_completo,
             tituloPuesto: payload.vacante?.titulo_puesto,
@@ -61,6 +69,14 @@ function formatSalarioChat(min, max) {
   if (!max) return `Desde ${fmt(min)}`;
   if (!min) return `Hasta ${fmt(max)}`;
   return `${fmt(min)} - ${fmt(max)}`;
+}
+function formatDuracionChat(segundos) {
+  if (segundos == null || Number.isNaN(Number(segundos))) return null;
+  const total = Math.max(0, Number(segundos));
+  const minutos = Math.floor(total / 60);
+  const restantes = Math.floor(total % 60);
+  if (minutos === 0) return `${restantes} s`;
+  return restantes ? `${minutos} min ${restantes} s` : `${minutos} min`;
 }
 let chatStore = {
   open: false,
@@ -331,12 +347,43 @@ function TarjetaEntrevistaCompletada({
     }}>
           {info.evaluacion.resumen}
         </span>}
+      {(info.evaluacion?.tiempo_utilizado_segundos != null || info.evaluacion?.motivo_finalizacion) && <span style={{
+      fontSize: "11px",
+      color: t.textMuted
+    }}>
+          {info.evaluacion.motivo_finalizacion === "tiempo_agotado" ? "Finalizada por tiempo agotado" : "Finalizada manualmente"}
+          {formatDuracionChat(info.evaluacion.tiempo_utilizado_segundos) ? ` · Duración: ${formatDuracionChat(info.evaluacion.tiempo_utilizado_segundos)}` : ""}
+          {formatDuracionChat(info.evaluacion.tiempo_limite_segundos) ? ` · Límite: ${formatDuracionChat(info.evaluacion.tiempo_limite_segundos)}` : ""}
+        </span>}
+      {info.evaluacion?.fortalezas?.length > 0 && <div style={{
+      color: t.textSecondary,
+      fontSize: "11.5px",
+      lineHeight: 1.4
+    }}>
+          <strong>Fortalezas</strong>
+          <ul style={{ margin: "3px 0 0", paddingLeft: "18px" }}>{info.evaluacion.fortalezas.map((item, index) => <li key={`fortaleza-${index}`}>{item}</li>)}</ul>
+        </div>}
+      {info.evaluacion?.areas_mejora?.length > 0 && <div style={{
+      color: t.textSecondary,
+      fontSize: "11.5px",
+      lineHeight: 1.4
+    }}>
+          <strong>Áreas de mejora</strong>
+          <ul style={{ margin: "3px 0 0", paddingLeft: "18px" }}>{info.evaluacion.areas_mejora.map((item, index) => <li key={`area-${index}`}>{item}</li>)}</ul>
+        </div>}
+      {info.evaluacion?.consejo_final && <span style={{
+      color: t.textSecondary,
+      fontSize: "11.5px",
+      lineHeight: 1.4
+    }}><strong>Consejo final:</strong> {info.evaluacion.consejo_final}</span>}
 
 
       <button className="ver-candidato-btn" onClick={() => onVerCandidato({
       id_vacante: info.idVacante,
-      id_postulacion: info.idPostulacion
-    })} style={{
+      id_postulacion: info.idPostulacion,
+      nombre_completo: info.nombreCompleto,
+      focusEntrevista: true
+      })} style={{
       marginTop: "4px",
       fontSize: "12px",
       fontWeight: 600,
@@ -352,7 +399,7 @@ function TarjetaEntrevistaCompletada({
       gap: "6px",
       whiteSpace: "nowrap"
     }}>
-        Ver candidato →
+        Ver más →
       </button>
     </div>;
 }
@@ -516,7 +563,9 @@ export default function ChatBot() {
         recomendacionIA: {
           id_vacante: recomendacion.id_vacante,
           id_postulacion: recomendacion.id_postulacion,
-          porcentaje_compatibilidad: recomendacion.porcentaje_compatibilidad
+          nombre_completo: recomendacion.nombre_completo,
+          porcentaje_compatibilidad: recomendacion.porcentaje_compatibilidad,
+          focusEntrevista: Boolean(recomendacion.focusEntrevista)
         }
       }
     });
