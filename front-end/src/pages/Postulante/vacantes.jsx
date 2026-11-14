@@ -16,6 +16,7 @@ import {
   getVacantesErrorMessage,
   modalidadMatches,
   normalizeRequisitos,
+  normalizeRecomendacionesIA,
   resolveReporteState,
   resolvePostulacionState,
   resolveVacanteFromQuery,
@@ -1345,6 +1346,7 @@ export default function Vacantes() {
   const navigate = useNavigate();
   const location = useLocation();
   const openedVacanteFromQueryRef = useRef(null);
+  const recomendacionRequestRef = useRef(0);
   const {
     recomendarVacantes,
     loading: cargandoRecomendacion
@@ -1383,30 +1385,41 @@ export default function Vacantes() {
   const abrirVacanteRecomendada = useCallback(recomendacion => {
     const idVacante = Number(recomendacion?.id_vacante);
     const base = vacantes.find(v => Number(v.id_vacante) === idVacante);
+    if (!base) {
+      setErrorRecomendacion('Esta vacante ya no estÃ¡ disponible.');
+      return;
+    }
     const desdeIA = recomendacion?.vacante ?? {};
     setVacanteSeleccionada({
       ...desdeIA,
       ...base,
-      empresa: desdeIA.empresa ?? base?.empresa,
+      empresa: base.empresa,
       recomendacion_ia: recomendacion
     });
   }, [vacantes]);
   const handleRecomendarVacantes = useCallback(async () => {
+    const requestId = ++recomendacionRequestRef.current;
     setErrorRecomendacion('');
     try {
       const data = await recomendarVacantes();
+      if (requestId !== recomendacionRequestRef.current) return;
       if (!data.auth) {
         window.location.href = '/login';
         return;
       }
-      setRecomendacionesIA(data.recomendaciones ?? []);
-      if (!data.recomendaciones?.length) {
+      const recomendaciones = Array.isArray(data.recomendaciones) ? data.recomendaciones : [];
+      const normalizadas = normalizeRecomendacionesIA(recomendaciones, vacantes);
+      setRecomendacionesIA(normalizadas);
+      if (!recomendaciones.length) {
         setErrorRecomendacion(data.message ?? 'No hay vacantes nuevas para recomendar por ahora.');
+      } else if (!normalizadas.length) {
+        setErrorRecomendacion('Esta vacante ya no estÃ¡ disponible.');
       }
     } catch {
+      if (requestId !== recomendacionRequestRef.current) return;
       setErrorRecomendacion('No se pudieron generar recomendaciones con IA. Intenta de nuevo.');
     }
-  }, [recomendarVacantes]);
+  }, [recomendarVacantes, vacantes]);
   const modalidades = [{
     value: 'Todas',
     label: 'Todas'
@@ -1819,6 +1832,19 @@ export default function Vacantes() {
           fontWeight: 700
         }}>
                 {errorRecomendacion}
+                <button type="button" onClick={handleRecomendarVacantes} disabled={cargandoRecomendacion} style={{
+            display: 'block',
+            marginTop: '12px',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #fca5a5',
+            background: '#fff',
+            color: '#991b1b',
+            fontWeight: 800,
+            cursor: cargandoRecomendacion ? 'wait' : 'pointer'
+          }}>
+                  Reintentar
+                </button>
               </div> : <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',

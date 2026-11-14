@@ -25,6 +25,30 @@ export function normalizeRequisitos(value) {
   return values.map(item => String(item ?? '').trim()).filter(Boolean);
 }
 
+export function normalizeRecomendacionesIA(recomendaciones = [], vacantes = []) {
+  const oficiales = new Map(
+    (Array.isArray(vacantes) ? vacantes : [])
+      .map(vacante => [Number(vacante?.id_vacante), vacante])
+      .filter(([id, vacante]) => Number.isInteger(id) && id > 0 && vacante),
+  );
+  const usados = new Set();
+
+  return (Array.isArray(recomendaciones) ? recomendaciones : []).flatMap(item => {
+    const id = Number(item?.id_vacante);
+    const compatibilidad = Number(item?.compatibilidad);
+    if (!Number.isInteger(id) || id <= 0 || usados.has(id) || !oficiales.has(id)) return [];
+    if (!Number.isFinite(compatibilidad) || compatibilidad < 0 || compatibilidad > 100) return [];
+
+    usados.add(id);
+    return [{
+      ...item,
+      id_vacante: id,
+      compatibilidad: Math.round(compatibilidad),
+      vacante: oficiales.get(id),
+    }];
+  });
+}
+
 export function getSafeExternalUrl(value) {
   const clean = String(value ?? '').trim();
   return /^https?:\/\//i.test(clean) ? clean : null;
