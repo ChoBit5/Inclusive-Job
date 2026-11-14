@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Bell, CheckCircle2, Eye, Flag, RefreshCw, X } from 'lucide-react';
 import PortalLayout from '../../components/Portal/Portallayout';
@@ -7,6 +7,7 @@ import { reclutadorNav } from '../../components/Portal/navItems';
 import { Button, ErrorBanner, PageHeader, SearchBar } from '../../components/Admin/UI';
 import Table from '../../components/Admin/Table';
 import Pagination from '../../components/Admin/Pagination';
+import { useFocusTrap } from '../../components/useFocusTrap.js';
 import BubleChat from "../Reclutador/ChatBot.jsx";
 import { useAvisosReportesReclutador, useReportesReclutador } from '../../hooks/Reclutador/useDomain.js';
 import { errorAlert, successAlert } from '../../components/Admin/alerts';
@@ -28,6 +29,13 @@ export default function ReportesMios() {
   const [page, setPage] = useState(1);
   const [modalReporte, setModalReporte] = useState(null);
   const [avisoLoading, setAvisoLoading] = useState(null);
+  const modalRef = useRef(null);
+
+  useFocusTrap({
+    open: Boolean(modalReporte),
+    containerRef: modalRef,
+    onClose: () => setModalReporte(null),
+  });
   useEffect(() => {
     const payload = data?.data ?? data;
     if (!payload) return;
@@ -85,10 +93,20 @@ export default function ReportesMios() {
     key: 'acciones',
     label: 'Acciones',
     render: (_, row) => <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/reclutador/vacantes/${row.id_vacante}`)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Ver vacante ${row.vacante}`}
+            onClick={() => navigate(`/reclutador/vacantes/${row.id_vacante}`)}
+          >
             <Eye size={14} />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setModalReporte(row)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Ver detalle del reporte ${row.id}`}
+            onClick={() => setModalReporte(row)}
+          >
             <Flag size={14} />
           </Button>
         </div>
@@ -121,13 +139,26 @@ export default function ReportesMios() {
       </div>
 
       {modalReporte && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setModalReporte(null)}>
-          <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl" onClick={e => e.stopPropagation()}>
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detalle-reporte-titulo"
+            tabIndex={-1}
+            className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-white font-semibold flex items-center gap-2">
+              <h2 id="detalle-reporte-titulo" className="text-white font-semibold flex items-center gap-2">
                 <Flag size={15} className="text-violet-400" />
                 Detalle del reporte
               </h2>
-              <button type="button" onClick={() => setModalReporte(null)} className="text-slate-400 hover:text-white transition-colors">
+              <button
+                type="button"
+                aria-label="Cerrar detalle del reporte"
+                onClick={() => setModalReporte(null)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
