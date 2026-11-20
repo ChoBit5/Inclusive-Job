@@ -52,6 +52,9 @@ export const ENDPOINTS = {
     historial: `${BASE_URL}/chat/historial.php`,
     recomendarCandidato: `${BASE_URL}/chat/recomendar_candidatos.php`,
     mejorarRedaccion: `${BASE_URL}/chat/mejorar_redaccion.php`,
-     solicitarEntrevista: `${BASE_URL}/chat/solicitar_entrevista.php`,
+    solicitarEntrevista: `${BASE_URL}/chat/solicitar_entrevista.php`,
+    entrevistaVideoInfo: `${BASE_URL}/chat/camara/entrevista_video_info.php`,
+    entrevistaVideoVer: `${BASE_URL}/chat/camara/entrevista_video_ver.php`,
+    entrevistaVideoReintentar: `${BASE_URL}/chat/camara/entrevista_video_reintentar.php`,
   },
 };

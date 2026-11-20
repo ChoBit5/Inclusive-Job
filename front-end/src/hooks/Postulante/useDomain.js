@@ -206,7 +206,23 @@ export function useEntrevistaRealPostulante() {
     return data;
   }, []);
 
-  return { ejecutarEntrevista };
+  const subirVideoEntrevista = useCallback(async ({ id_vacante, video, camaraInterrumpida = false }) => {
+    const form = new FormData();
+    form.append('id_vacante', String(id_vacante));
+    form.append('camara_interrumpida', camaraInterrumpida ? '1' : '0');
+    form.append('video', video, `entrevista.${String(video.type).includes('mp4') ? 'mp4' : 'webm'}`);
+
+    const { res, data } = await requestPostulante(ENDPOINTS.ia.entrevistaVideo, {
+      method: 'POST',
+      body: form,
+    });
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.message || 'No se pudo enviar el video de verificacion.');
+    }
+    return data;
+  }, []);
+
+  return { ejecutarEntrevista, subirVideoEntrevista };
 }
 
 export function usePostulanteDashboard() {

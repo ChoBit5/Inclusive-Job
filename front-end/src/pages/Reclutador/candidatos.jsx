@@ -8,6 +8,7 @@ import BubleChat from "../Reclutador/ChatBot.jsx";
 import { errorAlert, successAlert } from "../../components/Admin/alerts";
 import { resolveAssetUrl } from "../../hooks/Sesion/apiSesion.js";
 import PdfPreviewModal from "../../components/PdfPreviewModal";
+import EntrevistaVideoPanel from "../../components/EntrevistaVideoPanel";
 import { useCandidatosVacanteReclutador, useVacantesConCandidatosReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { ENDPOINTS } from "../../hooks/Reclutador/apiReclutador.js";
 import { applyPostulacionEstado, getCertificacionPdfUrl as buildCertificacionPdfUrl, getCvUrl as buildCvUrl, getEntrevistaEstado, getPostulacionActionState, mapEstadoPostulacion } from "../../hooks/Reclutador/candidatosHelpers.js";
@@ -567,7 +568,7 @@ export default function Candidatos() {
               </button>}
           </div>
 
-          {entrevistaEstado === "completada" && candidatoSeleccionado.evaluacion_entrevista && <EntrevistaResumen autoFocus={enfocarEntrevista} evaluacion={candidatoSeleccionado.evaluacion_entrevista} tiempoUtilizado={candidatoSeleccionado.tiempo_utilizado_entrevista} tiempoLimite={candidatoSeleccionado.tiempo_limite_entrevista} motivoFinalizacion={candidatoSeleccionado.motivo_finalizacion_entrevista} />}
+          {entrevistaEstado === "completada" && candidatoSeleccionado.evaluacion_entrevista && <EntrevistaResumen autoFocus={enfocarEntrevista} evaluacion={candidatoSeleccionado.evaluacion_entrevista} tiempoUtilizado={candidatoSeleccionado.tiempo_utilizado_entrevista} tiempoLimite={candidatoSeleccionado.tiempo_limite_entrevista} motivoFinalizacion={candidatoSeleccionado.motivo_finalizacion_entrevista} idPostulacion={candidatoSeleccionado.id_postulacion} />}
         </div>}
       <BubleChat />
       <PdfPreviewModal open={Boolean(pdfPreview)} sourceUrl={pdfPreview?.sourceUrl} title={pdfPreview?.title} onClose={() => setPdfPreview(null)} theme={t} />
@@ -664,7 +665,8 @@ function EntrevistaResumen({
   evaluacion,
   tiempoUtilizado,
   tiempoLimite,
-  motivoFinalizacion
+  motivoFinalizacion,
+  idPostulacion
 }) {
   const resumenRef = useRef(null);
   useEffect(() => {
@@ -686,6 +688,7 @@ function EntrevistaResumen({
       <EntrevistaLista titulo="Fortalezas" items={evaluacion.fortalezas} />
       <EntrevistaLista titulo="Áreas de mejora" items={evaluacion.areas_mejora} />
       {evaluacion.consejo_final && <div style={entrevistaConsejoStyle}><strong>Consejo final</strong><p>{evaluacion.consejo_final}</p></div>}
+      {idPostulacion ? <EntrevistaVideoPanel idPostulacion={idPostulacion} /> : null}
       <p style={entrevistaResumenDisclaimerStyle}>Evaluación generada con IA; úsala como apoyo para revisar el proceso.</p>
     </section>;
 }

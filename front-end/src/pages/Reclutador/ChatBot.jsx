@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useReclutadorChat, useReclutadorChatHistorial, useMejorCandidatoReclutador, useVacantesReclutador, useSolicitarEntrevistaReclutador } from "../../hooks/Reclutador/useDomain.js";
 import { reclutadorTheme as t } from "../../components/Portal/portalTheme";
 import ChatbotUI from "../../components/chat/ChatbotUI.jsx";
+import EntrevistaVideoPanel from "../../components/EntrevistaVideoPanel.jsx";
 const RUTA_CANDIDATOS = "/reclutador/candidatos";
 const PATRON_MEJOR_CANDIDATO = /mejor\s+candidat|mejor\s+postulante|candidat[oa]\s+ideal|recomi[eé]ndame.*candidat|qui[eé]n.*(mejor|ideal).*postul/i;
 const SUGERENCIAS = ["¿Cuáles son los mejores postulantes para mi vacante activa?", "¿Cómo filtro candidatos por habilidades o discapacidad?", "¿Cómo publico una nueva vacante?", "¿Cómo reviso los reportes de mis vacantes?"];
@@ -377,6 +378,8 @@ function TarjetaEntrevistaCompletada({
       lineHeight: 1.4
     }}><strong>Consejo final:</strong> {info.evaluacion.consejo_final}</span>}
 
+
+      {info.idPostulacion ? <EntrevistaVideoPanel compact idPostulacion={info.idPostulacion} /> : null}
 
       <button className="ver-candidato-btn" onClick={() => onVerCandidato({
       id_vacante: info.idVacante,

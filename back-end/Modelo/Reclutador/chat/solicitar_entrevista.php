@@ -89,7 +89,9 @@ try {
     $tituloPuesto = (string)$fila['titulo_puesto'];
     $modalidad = (string)$fila['modalidad'];
     $nombreCompleto = trim((string)$fila['nombre_completo']);
-    $mensaje = "Un reclutador te invito a una entrevista para el puesto \"$tituloPuesto\".";
+    $mensaje = "Un reclutador te invitó a una entrevista para el puesto \"$tituloPuesto\". "
+        . "Durante la entrevista se activará tu cámara y se grabará video con el único fin de verificar que no se realice trampa. "
+        . "El reclutador podrá ver ese video una sola vez y un servicio de inteligencia artificial lo analizará para apoyar su revisión.";
     $payload = json_encode([
         'text' => $mensaje,
         'vacante' => [

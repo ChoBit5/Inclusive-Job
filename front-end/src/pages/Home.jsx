@@ -478,9 +478,8 @@ export default function Home() {
       <footer className="bg-indigo-900 text-indigo-100">
         <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white rounded" />
-              <h1 className="text-lg font-bold text-white">InclusiveJobIA</h1>
+            <div className="mb-4">
+              <img src={logo} alt="Logo de InclusiJob IA" className="h-14 w-auto max-w-[240px] object-contain" />
             </div>
             <p className="text-sm text-indigo-200">Plataforma enfocada en la inclusión laboral, conectando talento con oportunidades mediante inteligencia artificial.</p>
             <div className="flex gap-4 mt-5">

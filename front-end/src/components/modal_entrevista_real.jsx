@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEntrevistaRealPostulante } from "../hooks/Postulante/useDomain.js";
 const COLORS = {
   primary: "#2563eb",
@@ -27,13 +27,34 @@ function formatTiempoRestante(segundos) {
   const segundosRestantes = Math.floor(total % 60).toString().padStart(2, "0");
   return `${minutos}:${segundosRestantes}`;
 }
+const VIDEO_BITS_POR_SEGUNDO = 400000;
+const AUDIO_BITS_POR_SEGUNDO = 32000;
+function elegirTipoGrabacion() {
+  if (typeof MediaRecorder === "undefined") return "";
+  const candidatos = ["video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+  return candidatos.find(tipo => MediaRecorder.isTypeSupported(tipo)) ?? "";
+}
+function mensajeErrorCamara(err) {
+  switch (err?.name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return "Necesitas permitir el acceso a la cámara para realizar esta entrevista. Revisa los permisos del navegador y vuelve a abrirla.";
+    case "NotFoundError":
+      return "No se encontró una cámara en tu dispositivo.";
+    case "NotReadableError":
+      return "No se pudo usar la cámara porque otra aplicación la está usando.";
+    default:
+      return "No se pudo activar la cámara. Revisa que esté conectada y permitida.";
+  }
+}
 export default function EntrevistaRealModal({
   vacante,
   onClose,
   onEvaluacionLista
 }) {
   const {
-    ejecutarEntrevista
+    ejecutarEntrevista,
+    subirVideoEntrevista
   } = useEntrevistaRealPostulante();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -49,15 +70,161 @@ export default function EntrevistaRealModal({
   const startedRef = useRef(false);
   const finalizarRef = useRef(null);
   const autoFinalizandoRef = useRef(false);
+  const mountedRef = useRef(true);
+  const streamRef = useRef(null);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const videoBlobRef = useRef(null);
+  const camaraInterrumpidaRef = useRef(false);
+  const previewRef = useRef(null);
+  const [camaraLista, setCamaraLista] = useState(false);
+  const [camaraAviso, setCamaraAviso] = useState("");
+  const [videoEstado, setVideoEstado] = useState("idle");
+  const [videoError, setVideoError] = useState("");
+  const setPreviewNode = useCallback(node => {
+    previewRef.current = node;
+    if (node && streamRef.current) node.srcObject = streamRef.current;
+  }, []);
+  function apagarCamara() {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+    setCamaraLista(false);
+  }
+  async function pedirCamara() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      throw new Error("Tu navegador no permite grabar video. Usa una versión reciente de Chrome, Edge, Firefox o Safari.");
+    }
+    const video = {
+      width: {
+        ideal: 640
+      },
+      height: {
+        ideal: 480
+      },
+      frameRate: {
+        ideal: 15
+      }
+    };
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video,
+        audio: true
+      });
+    } catch (err) {
+      if (err?.name !== "NotFoundError") throw new Error(mensajeErrorCamara(err));
+      // Sin micrófono: la entrevista es escrita, se continúa solo con video.
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video,
+          audio: false
+        });
+      } catch (errSinAudio) {
+        throw new Error(mensajeErrorCamara(errSinAudio));
+      }
+    }
+    if (!mountedRef.current) {
+      stream.getTracks().forEach(track => track.stop());
+      throw new Error("Entrevista cancelada.");
+    }
+    streamRef.current = stream;
+    stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+      camaraInterrumpidaRef.current = true;
+      if (mountedRef.current) setCamaraAviso("Se perdió la señal de la cámara. Revisa que siga conectada y permitida.");
+    });
+    setCamaraLista(true);
+  }
+  function prepararGrabadora() {
+    const tipo = elegirTipoGrabacion();
+    const opciones = {
+      videoBitsPerSecond: VIDEO_BITS_POR_SEGUNDO,
+      audioBitsPerSecond: AUDIO_BITS_POR_SEGUNDO
+    };
+    if (tipo) opciones.mimeType = tipo;
+    const recorder = new MediaRecorder(streamRef.current, opciones);
+    chunksRef.current = [];
+    recorder.addEventListener("dataavailable", e => {
+      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+    });
+    recorderRef.current = recorder;
+  }
+  function detenerGrabacion() {
+    return new Promise(resolve => {
+      const recorder = recorderRef.current;
+      const armar = () => {
+        const tipo = recorder?.mimeType || chunksRef.current[0]?.type || "video/webm";
+        const blob = new Blob(chunksRef.current, {
+          type: tipo
+        });
+        apagarCamara();
+        resolve(blob.size > 0 ? blob : null);
+      };
+      if (!recorder || recorder.state === "inactive") {
+        armar();
+        return;
+      }
+      recorder.addEventListener("stop", armar, {
+        once: true
+      });
+      try {
+        recorder.stop();
+      } catch {
+        armar();
+      }
+    });
+  }
+  async function enviarVideo(blob) {
+    if (!blob) {
+      setVideoEstado("sin_video");
+      return;
+    }
+    videoBlobRef.current = blob;
+    setVideoEstado("subiendo");
+    setVideoError("");
+    try {
+      await subirVideoEntrevista({
+        id_vacante: vacante.id_vacante,
+        video: blob,
+        camaraInterrumpida: camaraInterrumpidaRef.current
+      });
+      videoBlobRef.current = null;
+      if (mountedRef.current) setVideoEstado("enviado");
+    } catch (err) {
+      if (mountedRef.current) {
+        setVideoError(err instanceof Error ? err.message : "No se pudo enviar el video de verificación.");
+        setVideoEstado("error");
+      }
+    }
+  }
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {
+          // ya estaba detenida
+        }
+      }
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    };
+  }, []);
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
     (async () => {
       try {
+        await pedirCamara();
+        prepararGrabadora();
         const data = await ejecutarEntrevista({
           accion: "iniciar",
           id_vacante: vacante.id_vacante
         });
+        if (!mountedRef.current) return;
+        recorderRef.current?.start(10000);
         setMessages([{
           sender: "bot",
           text: data.mensaje
@@ -65,10 +232,13 @@ export default function EntrevistaRealModal({
         setExpiraEn(Number(data.expira_en));
         setTiempoRestante(Number(data.tiempo_restante_segundos));
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : "No se pudo iniciar la entrevista.");
-        setInitError(true);
+        apagarCamara();
+        if (mountedRef.current) {
+          setErrorMsg(err instanceof Error ? err.message : "No se pudo iniciar la entrevista.");
+          setInitError(true);
+        }
       } finally {
-        setStarting(false);
+        if (mountedRef.current) setStarting(false);
       }
     })();
   }, []);
@@ -132,6 +302,7 @@ export default function EntrevistaRealModal({
     setLoading(true);
     try {
       const historial = buildHistorial();
+      const videoPendiente = detenerGrabacion();
       const data = await ejecutarEntrevista({
         accion: "finalizar",
         id_vacante: vacante.id_vacante,
@@ -144,6 +315,7 @@ export default function EntrevistaRealModal({
         evaluacion: data.evaluacion,
         vacante
       });
+      videoPendiente.then(enviarVideo);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "No se pudo evaluar la entrevista. Intenta de nuevo.");
       setInitError(true);
@@ -170,7 +342,7 @@ export default function EntrevistaRealModal({
               {vacante.empresa ? ` · ${vacante.empresa}` : ""}
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={styles.closeBtn}>
+          <button onClick={videoEstado === "subiendo" ? undefined : onClose} aria-label="Cerrar" style={styles.closeBtn}>
             <CloseIcon />
           </button>
         </div>
@@ -180,11 +352,20 @@ export default function EntrevistaRealModal({
             <strong style={styles.timerLabel}>Tiempo restante</strong>
             <span style={styles.timerHint}>Límite total: 15 minutos</span>
           </div>
+          <div style={styles.cameraBox}>
+            {camaraLista && !evaluacion && <>
+                <video ref={setPreviewNode} autoPlay muted playsInline aria-label="Vista previa de tu cámara" style={styles.cameraPreview} />
+                <span style={styles.recBadge}>
+                  <span style={styles.recDot} />
+                  Grabando
+                </span>
+              </>}
+          </div>
           <strong style={styles.timerValue}>{formatTiempoRestante(tiempoRestante)}</strong>
         </div>
 
         <div style={styles.messagesBox}>
-          {starting && <div style={styles.systemNote}>Preparando tu entrevista...</div>}
+          {starting && <div style={styles.systemNote}>Activando tu cámara y preparando tu entrevista...</div>}
 
           {messages.map((m, i) => <div key={i} style={{
           ...styles.msg,
@@ -235,6 +416,18 @@ export default function EntrevistaRealModal({
             </div>}
 
           {errorMsg && <div style={styles.errorNote}>{errorMsg}</div>}
+          {camaraAviso && !evaluacion && <div role="status" style={styles.timerNotice}>{camaraAviso}</div>}
+          {videoEstado === "subiendo" && <div role="status" style={styles.timerNotice}>Enviando el video de verificación. No cierres esta ventana...</div>}
+          {videoEstado === "enviado" && <div role="status" style={styles.systemNote}>Video de verificación enviado.</div>}
+          {videoEstado === "sin_video" && <div role="status" style={styles.systemNote}>No se grabó video de esta entrevista.</div>}
+          {videoEstado === "error" && <div style={styles.errorNote}>
+              {videoError || "No se pudo enviar el video de verificación."}
+              <div>
+                <button type="button" onClick={() => enviarVideo(videoBlobRef.current)} style={styles.retryBtn}>
+                  Reintentar envío
+                </button>
+              </div>
+            </div>}
           {finalizandoPorTiempo && !evaluacion && <div role="status" style={styles.timerNotice}>Se agotó el tiempo. Estamos evaluando las respuestas que alcanzaste a enviar...</div>}
           <div ref={messagesEndRef} />
         </div>
@@ -250,7 +443,10 @@ export default function EntrevistaRealModal({
           </div>}
 
         <div style={styles.footer}>
-          {evaluacion ? <button onClick={onClose} style={styles.finishBtn}>
+          {evaluacion ? <button onClick={onClose} disabled={videoEstado === "subiendo"} style={{
+          ...styles.finishBtn,
+          ...(videoEstado === "subiendo" ? styles.finishBtnDisabled : {})
+        }}>
               Cerrar
             </button> : initError ? <button onClick={onClose} style={styles.finishBtn}>
               Cerrar
@@ -285,6 +481,46 @@ export default function EntrevistaRealModal({
     </div>;
 }
 const styles = {
+  cameraBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8
+  },
+  cameraPreview: {
+    width: 64,
+    height: 48,
+    objectFit: "cover",
+    borderRadius: 10,
+    background: "#0f172a",
+    border: `1px solid ${COLORS.border}`,
+    transform: "scaleX(-1)"
+  },
+  recBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    fontSize: 11.5,
+    fontWeight: 700,
+    color: "#b91c1c"
+  },
+  recDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "#dc2626",
+    animation: "entrevista-real-typing-pulse 1.2s ease-in-out infinite"
+  },
+  retryBtn: {
+    marginTop: 8,
+    background: COLORS.gradient,
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "7px 14px",
+    fontSize: 12.5,
+    fontWeight: 700,
+    cursor: "pointer"
+  },
   overlay: {
     position: "fixed",
     inset: 0,

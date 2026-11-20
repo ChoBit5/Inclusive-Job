@@ -53,6 +53,9 @@ export const ENDPOINTS = {
 
     // Entrevista REAL (proceso de seleccion, solicitada por un reclutador).
     entrevistaReal: `${BASE_URL}/chat/entrevista_real.php`,
+
+    // Video de verificacion de la entrevista real (tabla propia: entrevista_video).
+    entrevistaVideo: `${BASE_URL}/chat/camara/entrevista_video.php`,
   },
 
   // Formulario
